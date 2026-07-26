@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/* Site theme — chosen by the manager via the admin panel.
+   ".theme-warm" (default) = warm professional light palette
+   ".theme-dark"           = dark palette
+   The active class is applied server-side by app/layout.tsx. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.theme-warm {
+  --color-bg-base: #f7f5f0;
+  --color-bg-surface: #efebe4;
+  --color-text-primary: #1e1b16;
+  --color-text-secondary: #736b64;
+  --color-border: #ddd7ce;
+  --color-brand-emphasis: #1b3a4b;
+  --color-brand-cta: #2a6b8a;
+  --color-accent: #c48a2b;
+  --color-success: #16a34a;
+}
+
+.theme-dark {
+  --color-bg-base: #0b1420;
+  --color-bg-surface: #111827;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+  --color-border: #1f2937;
+  --color-brand-emphasis: #6fa8dc;
+  --color-brand-cta: #3b82c4;
+  --color-accent: #d9a94a;
+  --color-success: #22c55e;
+}
+
+/* Backward-compat alias — admin panel toggle still uses .dark */
+.dark {
+  --color-bg-base: #0b1420;
+  --color-bg-surface: #111827;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+  --color-border: #1f2937;
+  --color-brand-emphasis: #6fa8dc;
+  --color-brand-cta: #3b82c4;
+  --color-accent: #d9a94a;
+  --color-success: #22c55e;
+}
+
+/* Maps the raw tokens above into Tailwind v4's utility namespace, e.g.
+   bg-bg-base, text-text-primary, border-border, bg-brand-cta, text-accent. */
+@theme inline {
+  --color-bg-base: var(--color-bg-base);
+  --color-bg-surface: var(--color-bg-surface);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-border: var(--color-border);
+  --color-brand-emphasis: var(--color-brand-emphasis);
+  --color-brand-cta: var(--color-brand-cta);
+  --color-accent: var(--color-accent);
+  --color-success: var(--color-success);
+
+  --font-sans: var(--font-vazirmatn);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand-cta) 40%, transparent); }
+  100% { box-shadow: 0 0 0 16px transparent; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-up { animation: fade-up 0.6s ease-out forwards; }
+.animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+.animate-scale-in { animation: scale-in 0.4s ease-out forwards; }
+.animate-pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
