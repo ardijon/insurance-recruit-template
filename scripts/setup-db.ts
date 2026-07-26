@@ -1,4 +1,3 @@
-// scripts/setup-db.ts
 import { createClient } from "@libsql/client";
 
 async function main() {
@@ -96,7 +95,7 @@ async function main() {
     console.log("Seeding default data...");
     await client.execute({
       sql: "INSERT INTO manager_profile (id, name, title, position_code, position_start_date, bio, achievements, current_agent_count, growth_agents_6m, growth_agents_1y, growth_agents_2y, growth_policies_6m, growth_policies_1y, growth_policies_2y) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      args: ['حمید رضایی', 'مدیر فروش ارشد', 'MGR-001', '1402/03/15', 'بیش از ۱۰ سال تجربه.', '["مدیر فروش برتر"]', 47, 25, 60, 120, 35, 85]
+      args: ['حمید رضایی', 'مدیر فروش ارشد', 'MGR-001', '1402/03/15', 'بیش از ۱۰ سال تجربه.', '["مدیر فروش برتر"]', 47, 25, 60, 120, 35, 85, 200]
     });
     await client.execute({ sql: "INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES (?, ?, 1, ?)", args: ["علی محمدی", "درآمدم سه برابر شده.", 1] });
     await client.execute({ sql: "INSERT INTO growth_path_stages (title, description, sort_order) VALUES (?, ?, ?)", args: ["بازاریاب", "آشنایی با محصولات بیمه عمر", 1] });
@@ -109,3 +108,40 @@ async function main() {
 }
 
 main().catch(console.error);
+فایل ۲: lib/seed.ts — کل محتوا رو جایگزین کن:
+import { selectOne, executeInsert } from "@/lib/db";
+
+export async function seedIfEmpty(): Promise<void> {
+  const profileCount = await selectOne("SELECT COUNT(*) AS c FROM manager_profile") as { c: number };
+
+  if (profileCount.c === 0) {
+    await executeInsert(
+      `INSERT INTO manager_profile (id, name, title, position_code, position_start_date, bio, achievements, current_agent_count,
+        growth_agents_6m, growth_agents_1y, growth_agents_2y, growth_policies_6m, growth_policies_1y, growth_policies_2y)
+       VALUES (1, 'حمید رضایی', 'مدیر فروش ارشد', 'MGR-001', '1402/03/15',
+        'بیش از ۱۰ سال تجربه در حوزه بیمه عمر و سرمایه‌گذاری.',
+        '["کسب عنوان مدیر فروش برتر"]',
+        47, 25, 60, 120, 35, 85, 200)`
+    );
+  }
+
+  const wallCount = await selectOne("SELECT COUNT(*) AS c FROM success_wall_entries") as { c: number };
+  if (wallCount.c === 0) {
+    await executeInsert("INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES (?, ?, 1, ?)", ["علی محمدی", "از وقتی وارد تیم شدم درآمدم سه برابر شده.", 1]);
+    await executeInsert("INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES (?, ?, 1, ?)", ["سارا احمدی", "بهترین تصمیم زندگی‌ام بود.", 2]);
+    await executeInsert("INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES (?, ?, 1, ?)", ["رضا کریمی", "با صفر سابقه شروع کردم، الان ماهی ۵۰ میلیون درآمد دارم.", 3]);
+  }
+
+  const growthCount = await selectOne("SELECT COUNT(*) AS c FROM growth_path_stages") as { c: number };
+  if (growthCount.c === 0) {
+    await executeInsert("INSERT INTO growth_path_stages (title, description, sort_order) VALUES (?, ?, ?)", ["بازاریاب", "دوره آموزشی و آشنایی با محصولات بیمه عمر", 1]);
+    await executeInsert("INSERT INTO growth_path_stages (title, description, sort_order) VALUES (?, ?, ?)", ["نماینده فعال", "ایجاد شبکه ارتباطی و جذب مشتریان جدید", 2]);
+    await executeInsert("INSERT INTO growth_path_stages (title, description, sort_order) VALUES (?, ?, ?)", ["مدیر فروش", "جذب و مدیریت تیم فروش", 3]);
+  }
+
+  const faqCount = await selectOne("SELECT COUNT(*) AS c FROM faq_items") as { c: number };
+  if (faqCount.c === 0) {
+    await executeInsert("INSERT INTO faq_items (question, answer, sort_order) VALUES (?, ?, ?)", ["آیا نیاز به سابقه فروش دارم؟", "خیر، آموزش رایگان است.", 1]);
+    await executeInsert("INSERT INTO faq_items (question, answer, sort_order) VALUES (?, ?, ?)", ["چه مدت طول می‌کشد؟", "حدود ۱۰ روز کاری", 2]);
+  }
+}
