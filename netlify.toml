@@ -1,0 +1,7 @@
+[build]
+  command = "npx netlify build"
+  publish = ".netlify"
+  functions = ".netlify/functions-internal"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
