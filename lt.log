@@ -1,8 +1,0 @@
-npm error code ECONNRESET
-npm error errno ECONNRESET
-npm error network request to https://registry.npmjs.org/localtunnel failed, reason: Client network socket disconnected before secure TLS connection was established
-npm error network This is a problem related to network connectivity.
-npm error network In most cases you are behind a proxy or have bad network settings.
-npm error network
-npm error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
-npm error A complete log of this run can be found in: C:\Users\Ardalan\AppData\Local\npm-cache\_logs\2026-07-25T22_19_59_779Z-debug-0.log
