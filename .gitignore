@@ -55,3 +55,6 @@ tunnel*.log
 dev.log
 lt.log
 Insurance
+
+# Local Netlify folder
+.netlify

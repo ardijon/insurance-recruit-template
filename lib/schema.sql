@@ -101,3 +101,9 @@ CREATE TABLE IF NOT EXISTS success_visual_story (
   images_json TEXT NOT NULL DEFAULT '[]',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

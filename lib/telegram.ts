@@ -1,3 +1,5 @@
+import { selectOne, ensureSchema } from "@/lib/db";
+
 export interface ApplicantNotification {
   fullName: string;
   phone: string;
@@ -16,11 +18,20 @@ export interface ApplicantNotification {
   referralAgentName: string | null;
 }
 
-function getBotToken(): string | undefined {
+async function getSetting(key: string): Promise<string | null> {
+  const row = await selectOne("SELECT value FROM settings WHERE key = ?", [key]);
+  return row ? (row.value as string) : null;
+}
+
+async function getBotToken(): Promise<string | undefined> {
+  const dbToken = await getSetting("TELEGRAM_BOT_TOKEN");
+  if (dbToken) return dbToken;
   return process.env.TELEGRAM_BOT_TOKEN;
 }
 
-function getChatId(): string | undefined {
+async function getChatId(): Promise<string | undefined> {
+  const dbChatId = await getSetting("TELEGRAM_CHAT_ID");
+  if (dbChatId) return dbChatId;
   return process.env.TELEGRAM_CHAT_ID;
 }
 
@@ -29,8 +40,9 @@ const TELEGRAM_API = "https://api.telegram.org";
 export async function notifyManagerOnTelegram(
   applicant: ApplicantNotification
 ): Promise<void> {
-  const token = getBotToken();
-  const chatId = getChatId();
+  await ensureSchema();
+  const token = await getBotToken();
+  const chatId = await getChatId();
 
   if (!token || !chatId) {
     console.warn(
@@ -55,6 +67,50 @@ export async function notifyManagerOnTelegram(
 
   if (!res.ok) {
     console.error(`[telegram] failed to send message: ${res.status} (chat_id redacted)`);
+  }
+}
+
+export async function testTelegramConnection(
+  token: string,
+  chatId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const url = `${TELEGRAM_API}/bot${token}/getMe`;
+    const meRes = await fetch(url);
+    if (!meRes.ok) {
+      return { success: false, error: "توکن ربات نامعتبر است" };
+    }
+    const meData = await meRes.json();
+    const botName = meData.result?.first_name ?? "ربات";
+
+    const testMsg = `✅ اتصال ربات <b>${escapeHtml(botName)}</b> با موفقیت برقرار شد!\n\nاز این به بعد هر درخواست نمایندگی جدید از طریق سایت، به صورت آنی به این چت ارسال می‌شود.`;
+
+    const sendUrl = `${TELEGRAM_API}/bot${token}/sendMessage`;
+    const sendRes = await fetch(sendUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: testMsg,
+        parse_mode: "HTML",
+      }),
+    });
+
+    if (!sendRes.ok) {
+      const errData = await sendRes.json().catch(() => ({}));
+      const desc = errData?.description ?? "خطای ناشناخته";
+      if (desc.includes("chat not found")) {
+        return { success: false, error: "شناسه چت نامعتبر است. مطمئن شوید ربات را به گروه/چت اضافه کرده‌اید." };
+      }
+      if (desc.includes("bot was blocked")) {
+        return { success: false, error: "ربات توسط کاربر بلاک شده است." };
+      }
+      return { success: false, error: `خطا: ${desc}` };
+    }
+
+    return { success: true };
+  } catch {
+    return { success: false, error: "خطا در اتصال به سرور تلگرام" };
   }
 }
 

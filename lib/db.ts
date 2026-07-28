@@ -275,6 +275,11 @@ export async function ensureSchema(): Promise<void> {
         images_json TEXT NOT NULL DEFAULT '[]',
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
     `;
     await client.executeMultiple(schema);
 
@@ -326,6 +331,16 @@ async function migrateDbTurso(client: Client): Promise<void> {
   await ensureCol("manager_profile", "growth_policies_6m", "INTEGER");
   await ensureCol("manager_profile", "growth_policies_1y", "INTEGER");
   await ensureCol("manager_profile", "growth_policies_2y", "INTEGER");
+
+  // Ensure settings table exists (added for Telegram integration)
+  await client.execute({
+    sql: `CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    args: [],
+  });
 }
 
 function migrateDbLocal(db: DatabaseSync): void {
@@ -396,4 +411,11 @@ function migrateDbLocal(db: DatabaseSync): void {
   if (!colNames.includes("growth_policies_2y")) {
     db.exec("ALTER TABLE manager_profile ADD COLUMN growth_policies_2y INTEGER");
   }
+
+  // Ensure settings table exists
+  db.exec(`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
 }
