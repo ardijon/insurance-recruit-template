@@ -29,7 +29,12 @@ export async function POST(request: NextRequest) {
     const row = await selectOne(
       "SELECT images_json FROM success_visual_story WHERE id = 1"
     ) as { images_json: string } | undefined;
-    const images: string[] = row ? JSON.parse(row.images_json) : [];
+    let images: string[];
+    try {
+      images = row ? JSON.parse(row.images_json) : [];
+    } catch {
+      images = [];
+    }
     images.push(dataUrl);
 
     const exists = await selectOne("SELECT id FROM success_visual_story WHERE id = 1");
@@ -64,7 +69,12 @@ export async function DELETE(request: NextRequest) {
   ) as { images_json: string } | undefined;
   if (!row) return NextResponse.json({ images: [] });
 
-  const images: string[] = JSON.parse(row.images_json);
+  let images: string[];
+  try {
+    images = JSON.parse(row.images_json);
+  } catch {
+    return NextResponse.json({ images: [] });
+  }
   const filtered = images.filter((img) => img !== imageUrl);
   await executeUpdate(
     "UPDATE success_visual_story SET images_json = ?, updated_at = datetime('now') WHERE id = 1",

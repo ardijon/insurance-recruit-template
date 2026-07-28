@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ToastContainer } from "@/components/toast";
 import { JalaliDatePicker } from "@/components/jalali-date-picker";
 import type { Toast } from "@/hooks/use-toast";
+import { adminFetch } from "@/lib/api-client";
 
 interface ProfileData {
   name: string;
@@ -56,7 +57,7 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/admin/profile")
+    adminFetch("/api/admin/profile")
       .then((res) => res.json())
       .then((d) => {
         let achievements: string[] = [];
@@ -80,7 +81,7 @@ export default function ProfilePage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/profile", {
+      const res = await adminFetch("/api/admin/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +117,7 @@ export default function ProfilePage() {
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const res = await adminFetch("/api/admin/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
       const result = await res.json();
       setField("photo_url", result.photo_url);

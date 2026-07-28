@@ -8,8 +8,8 @@ import {
   getJalaliYearMonth,
   todayJalaliDate,
   toPersianDigits,
-  gregorianToJalali,
-  jalaliToGregorian,
+  jalaliToIso,
+  dateFromIso,
   type JalaliDate,
 } from "@/lib/jalali";
 
@@ -50,18 +50,6 @@ const INITIAL: ApplicantFilters = {
 
 function hasActiveFilters(f: ApplicantFilters): boolean {
   return f.scoreMin !== "" || f.scoreMax !== "" || f.city !== "" || f.hasAppointment !== "" || f.status !== "" || f.dateFrom !== "" || f.dateTo !== "";
-}
-
-function jalaliToIso(j: JalaliDate): string {
-  const [gy, gm, gd] = jalaliToGregorian(j.year, j.month, j.day);
-  return `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
-}
-
-function dateFromIso(iso: string): JalaliDate | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
 }
 
 function formatJalaliShort(iso: string): string {
@@ -303,7 +291,7 @@ function JalaliDateInput({ label, value, onChange }: { label: string; value: str
       }
       if (left < 8) left = 8;
 
-      globalZIndex++;
+      globalZIndex = (globalZIndex + 1) % 1000000;
       setZIndex(globalZIndex);
       setDropdownPos({ top, left });
     }

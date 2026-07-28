@@ -32,7 +32,12 @@ export async function POST(request: NextRequest) {
       [Number(entryId)]
     ) as { images_json: string } | undefined;
 
-    const images: string[] = row ? JSON.parse(row.images_json) : [];
+    let images: string[];
+    try {
+      images = row ? JSON.parse(row.images_json) : [];
+    } catch {
+      images = [];
+    }
     images.push(dataUrl);
 
     await executeUpdate(
@@ -65,7 +70,12 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "entry not found" }, { status: 404 });
   }
 
-  const images: string[] = JSON.parse(row.images_json);
+  let images: string[];
+  try {
+    images = JSON.parse(row.images_json);
+  } catch {
+    return NextResponse.json({ error: "invalid images data" }, { status: 500 });
+  }
   const filtered = images.filter((img) => img !== imageUrl);
 
   await executeUpdate(

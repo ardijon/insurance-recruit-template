@@ -206,6 +206,7 @@ export function ApplicationForm() {
             <textarea
               value={step2.sales_background}
               onChange={(e) => setStep2({ ...step2, sales_background: e.target.value })}
+              maxLength={2000}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)] resize-none h-20"
               placeholder="سابقه فروش خود را توضیح دهید"
             />
@@ -218,6 +219,7 @@ export function ApplicationForm() {
               type="text"
               value={step2.network_size}
               onChange={(e) => setStep2({ ...step2, network_size: e.target.value })}
+              maxLength={1000}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)]"
               placeholder="مثال: حدود ۵۰۰ نفر"
             />
@@ -230,6 +232,7 @@ export function ApplicationForm() {
               type="text"
               value={step2.availability}
               onChange={(e) => setStep2({ ...step2, availability: e.target.value })}
+              maxLength={1000}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)]"
               placeholder="مثال: تمام وقت"
             />
@@ -247,6 +250,7 @@ export function ApplicationForm() {
             <textarea
               value={step3.motivation}
               onChange={(e) => setStep3({ ...step3, motivation: e.target.value })}
+              maxLength={2000}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)] resize-none h-28"
               placeholder="دلایل خود برای همکاری را بنویسید"
             />

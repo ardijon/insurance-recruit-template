@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { ToastContainer } from "@/components/toast";
 import type { Toast } from "@/hooks/use-toast";
+import { adminFetch } from "@/lib/api-client";
 
 interface Entry {
   id: number;
@@ -39,7 +40,7 @@ export default function SuccessWallPage() {
   }
 
   function load() {
-    fetch("/api/admin/success-wall")
+    adminFetch("/api/admin/success-wall")
       .then((res) => res.json())
       .then((d) => { setEntries(d); setDirty(false); })
       .catch(() => {})
@@ -55,7 +56,7 @@ export default function SuccessWallPage() {
   async function handleAdd() {
     if (!agentName.trim() || !quote.trim()) return;
     try {
-      const res = await fetch("/api/admin/success-wall", {
+      const res = await adminFetch("/api/admin/success-wall", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agent_name: agentName, quote, images_json: "[]", permission_granted: true, sort_order: entries.length }),
@@ -70,7 +71,7 @@ export default function SuccessWallPage() {
   async function handleDelete(id: number) {
     if (!confirm("آیا از حذف این آیتم اطمینان دارید؟")) return;
     try {
-      const res = await fetch(`/api/admin/success-wall?id=${id}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/admin/success-wall?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       addToast("حذف شد");
       load();
@@ -80,7 +81,7 @@ export default function SuccessWallPage() {
   async function handleEdit(item: Entry) {
     if (!editName.trim() || !editQuote.trim()) return;
     try {
-      const res = await fetch("/api/admin/success-wall", {
+      const res = await adminFetch("/api/admin/success-wall", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id, agent_name: editName, quote: editQuote, permission_granted: editPermission }),
@@ -112,7 +113,7 @@ export default function SuccessWallPage() {
       const formData = new FormData();
       formData.append("image", file);
       formData.append("entry_id", String(entryId));
-      const res = await fetch("/api/admin/success-wall-images", { method: "POST", body: formData });
+      const res = await adminFetch("/api/admin/success-wall-images", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
       addToast("عکس اضافه شد");
       load();
@@ -123,7 +124,7 @@ export default function SuccessWallPage() {
   async function handleRemoveImage(entryId: number, imageUrl: string) {
     if (!confirm("حذف این عکس؟")) return;
     try {
-      const res = await fetch(`/api/admin/success-wall-images?entry_id=${entryId}&image_url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/admin/success-wall-images?entry_id=${entryId}&image_url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       addToast("عکس حذف شد");
       load();
@@ -148,7 +149,7 @@ export default function SuccessWallPage() {
   async function saveOrder() {
     const orders = entries.map((e, i) => ({ id: e.id, sort_order: i }));
     try {
-      const res = await fetch("/api/admin/success-wall", {
+      const res = await adminFetch("/api/admin/success-wall", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orders }),

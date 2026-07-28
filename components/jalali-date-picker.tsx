@@ -27,7 +27,7 @@ function parseValue(val: string): JalaliDate | null {
   const y = Number(match[1]);
   const m = Number(match[2]);
   const d = Number(match[3]);
-  if (y < 1300 || y > 1500 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+  if (y < 1300 || y > 1500 || m < 1 || m > 12 || d < 1 || d > getJalaliMonthDays(y, m).length) return null;
   return { year: y, month: m, day: d };
 }
 

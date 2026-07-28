@@ -146,7 +146,7 @@ export function ApplicantTable({ applicants, sortBy, sortOrder, onSort, onStatus
                   </button>
                   <button
                     type="button"
-                    onClick={() => onDelete(a.id)}
+                    onClick={() => { if (window.confirm("آیا از حذف این متقاضی اطمینان دارید؟")) onDelete(a.id); }}
                     className="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-500/10"
                     title="حذف"
                   >

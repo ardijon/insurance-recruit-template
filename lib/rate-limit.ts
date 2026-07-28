@@ -11,15 +11,37 @@ function evictIfNeeded() {
   }
 }
 
-export function checkRateLimit(ip: string): boolean {
+function getClientIp(requestHeaders: Headers): string {
+  const forwarded = requestHeaders.get("x-forwarded-for");
+  if (!forwarded) return "unknown";
+  const parts = forwarded.split(",").map((p) => p.trim());
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const ip = parts[i];
+    if (ip && !ip.startsWith("10.") && !ip.startsWith("192.168.") && !ip.startsWith("172.")) {
+      return ip;
+    }
+  }
+  return parts[parts.length - 1] || "unknown";
+}
+
+export function getRateLimitKey(requestHeaders: Headers, cookieFingerprint?: string): string {
+  const ip = getClientIp(requestHeaders);
+  return cookieFingerprint ? `${ip}:${cookieFingerprint}` : ip;
+}
+
+export function checkRateLimit(key: string): boolean {
   evictIfNeeded();
   const now = Date.now();
-  const entry = rateLimit.get(ip);
+  const entry = rateLimit.get(key);
   if (!entry || now > entry.resetAt) {
-    rateLimit.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    rateLimit.set(key, { count: 1, resetAt: now + WINDOW_MS });
     return true;
   }
   if (entry.count >= MAX_ATTEMPTS) return false;
   entry.count++;
   return true;
+}
+
+export function resetRateLimit(key: string): void {
+  rateLimit.delete(key);
 }

@@ -2,7 +2,10 @@ export const SESSION_COOKIE = "admin_session";
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function getKey(): Promise<CryptoKey> {
-  const secret = process.env.ADMIN_PASSWORD || "";
+  const secret = process.env.ADMIN_PASSWORD;
+  if (!secret) {
+    throw new Error("ADMIN_PASSWORD environment variable is not set or empty");
+  }
   return crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -23,7 +26,6 @@ function hexToBuf(hex: string): Uint8Array {
 }
 
 export async function createSessionValue(): Promise<string> {
-  if (!process.env.ADMIN_PASSWORD) return "";
   const key = await getKey();
   const expiresAt = Date.now() + SESSION_MAX_AGE_MS;
   const payload = `${crypto.randomUUID()}:${expiresAt}`;
@@ -45,7 +47,12 @@ export async function verifySessionValue(token: string): Promise<boolean> {
   if (sep === -1) return false;
   const expiresAt = Number(payload.slice(sep + 1));
   if (Date.now() > expiresAt) return false;
-  const key = await getKey();
+  let key: CryptoKey;
+  try {
+    key = await getKey();
+  } catch {
+    return false;
+  }
   const expected = new Uint8Array(
     await crypto.subtle.sign(
       "HMAC",

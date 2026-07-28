@@ -175,4 +175,16 @@ export function todayJalaliDate(): JalaliDate {
   return gregorianToJalali(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
+export function jalaliToIso(j: JalaliDate): string {
+  const [gy, gm, gd] = jalaliToGregorian(j.year, j.month, j.day);
+  return `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
+}
+
+export function dateFromIso(iso: string): JalaliDate | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
 export { JALALI_MONTHS, JALALI_WEEKDAYS, toPersianDigits, gregorianToJalali, jalaliToGregorian };

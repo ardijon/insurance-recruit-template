@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { ToastContainer } from "@/components/toast";
 import type { Toast } from "@/hooks/use-toast";
+import { adminFetch } from "@/lib/api-client";
 
 export default function VisualStoryPage() {
   const [images, setImages] = useState<string[]>([]);
@@ -21,7 +22,7 @@ export default function VisualStoryPage() {
   }
 
   useEffect(() => {
-    fetch("/api/admin/visual-story")
+    adminFetch("/api/admin/visual-story")
       .then((res) => res.json())
       .then((d) => { try { setImages(JSON.parse(d.images_json)); } catch { setImages([]); } })
       .catch(() => {})
@@ -40,7 +41,7 @@ export default function VisualStoryPage() {
     try {
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch("/api/admin/visual-story-images", { method: "POST", body: formData });
+      const res = await adminFetch("/api/admin/visual-story-images", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
       const result = await res.json();
       setImages(result.images);
@@ -56,7 +57,7 @@ export default function VisualStoryPage() {
   async function handleRemove(imageUrl: string) {
     if (!confirm("حذف این عکس؟")) return;
     try {
-      const res = await fetch(`/api/admin/visual-story-images?image_url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/admin/visual-story-images?image_url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       const result = await res.json();
       setImages(result.images);

@@ -9,6 +9,7 @@ import { FilterBar, type ApplicantFilters } from "@/components/applicant-filters
 import { ApplicantTable, type SortField } from "@/components/applicant-table";
 import { StatusBadge, STATUS_CONFIG } from "@/components/status-badge";
 import { Pagination } from "@/components/pagination";
+import { adminFetch } from "@/lib/api-client";
 
 interface Applicant {
   id: number;
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
     params.set("sort_by", sortBy);
     params.set("sort_order", sortOrder);
 
-    fetch(`/api/admin/applicants?${params.toString()}`)
+    adminFetch(`/api/admin/applicants?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
@@ -118,21 +119,21 @@ export default function AdminDashboard() {
   }, [page, search, filters, sortBy, sortOrder, addToast]);
 
   useEffect(() => {
-    fetch("/api/admin/profile")
+    adminFetch("/api/admin/profile")
       .then((res) => res.json())
       .then((data) => setProfile(data))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetch("/api/admin/cities")
+    adminFetch("/api/admin/cities")
       .then((res) => res.json())
       .then((data) => setCities(data ?? []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetch("/api/admin/applicants?limit=1000")
+    adminFetch("/api/admin/applicants?limit=1000")
       .then((res) => res.json())
       .then((data) => setAllApplicants(data.data ?? []))
       .catch(() => {});
@@ -179,7 +180,7 @@ export default function AdminDashboard() {
     if (!schedulingFor || !calendarDate) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/applicants", {
+      const res = await adminFetch("/api/admin/applicants", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: schedulingFor, appointment_date: calendarDate, appointment_time: calendarTime }),
@@ -203,7 +204,7 @@ export default function AdminDashboard() {
 
   async function handleStatusChange(id: number, status: string) {
     try {
-      const res = await fetch("/api/admin/applicants", {
+      const res = await adminFetch("/api/admin/applicants", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
@@ -219,7 +220,7 @@ export default function AdminDashboard() {
   async function handleDelete(id: number) {
     if (!confirm("آیا از حذف این متقاضی اطمینان دارید؟")) return;
     try {
-      const res = await fetch(`/api/admin/applicants?id=${id}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/admin/applicants?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setApplicants((prev) => prev.filter((a) => a.id !== id));
       setTotalCount((t) => t - 1);

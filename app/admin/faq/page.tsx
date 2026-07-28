@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ToastContainer } from "@/components/toast";
 import type { Toast } from "@/hooks/use-toast";
+import { adminFetch } from "@/lib/api-client";
 
 interface FaqItem {
   id: number;
@@ -32,7 +33,7 @@ export default function FaqPage() {
   }
 
   function load() {
-    fetch("/api/admin/faq")
+    adminFetch("/api/admin/faq")
       .then((res) => res.json())
       .then((d) => { setItems(d); setDirty(false); })
       .catch(() => {})
@@ -44,7 +45,7 @@ export default function FaqPage() {
   async function handleAdd() {
     if (!question.trim() || !answer.trim()) return;
     try {
-      const res = await fetch("/api/admin/faq", {
+      const res = await adminFetch("/api/admin/faq", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, answer, sort_order: items.length }),
@@ -59,7 +60,7 @@ export default function FaqPage() {
   async function handleDelete(id: number) {
     if (!confirm("آیا از حذف این سوال اطمینان دارید؟")) return;
     try {
-      const res = await fetch(`/api/admin/faq?id=${id}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/admin/faq?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       addToast("حذف شد");
       load();
@@ -69,7 +70,7 @@ export default function FaqPage() {
   async function handleEdit(item: FaqItem) {
     if (!editQuestion.trim() || !editAnswer.trim()) return;
     try {
-      const res = await fetch("/api/admin/faq", {
+      const res = await adminFetch("/api/admin/faq", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id, question: editQuestion, answer: editAnswer }),
@@ -113,7 +114,7 @@ export default function FaqPage() {
   async function saveOrder() {
     const orders = items.map((item, i) => ({ id: item.id, sort_order: i }));
     try {
-      const res = await fetch("/api/admin/faq", {
+      const res = await adminFetch("/api/admin/faq", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orders }),

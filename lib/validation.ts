@@ -12,13 +12,13 @@ export const step1Schema = z.object({
 });
 
 export const step2Schema = z.object({
-  sales_background: z.string().optional().default(""),
-  network_size: z.string().optional().default(""),
-  availability: z.string().optional().default(""),
+  sales_background: z.string().max(2000).optional().default(""),
+  network_size: z.string().max(1000).optional().default(""),
+  availability: z.string().max(1000).optional().default(""),
 });
 
 export const step3Schema = z.object({
-  motivation: z.string().optional().default(""),
+  motivation: z.string().max(2000).optional().default(""),
 });
 
 export const referralCodeSchema = z.string().optional().default("");

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { selectAll, executeInsert, executeUpdate, executeInsert as execInsert, ensureSchema } from "@/lib/db";
+import { selectAll, executeUpdate, executeInsert as execInsert, ensureSchema } from "@/lib/db";
 
 export async function GET() {
   await ensureSchema();

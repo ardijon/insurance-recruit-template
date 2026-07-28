@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionValue, SESSION_COOKIE, timingSafeEqual } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getRateLimitKey, resetRateLimit } from "@/lib/rate-limit";
+
+const RATE_LIMIT_COOKIE = "rl_attempt";
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  if (!checkRateLimit(ip)) {
+  const rlFingerprint = request.cookies.get(RATE_LIMIT_COOKIE)?.value;
+  const rlKey = getRateLimitKey(request.headers, rlFingerprint);
+  if (!checkRateLimit(rlKey)) {
     return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
   }
 
@@ -32,6 +35,8 @@ export async function POST(request: NextRequest) {
 
   const token = await createSessionValue();
 
+  resetRateLimit(rlKey);
+
   const response = NextResponse.json({ success: true });
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -40,6 +45,16 @@ export async function POST(request: NextRequest) {
     path: "/",
     maxAge: 60 * 60 * 24,
   });
+
+  if (!rlFingerprint) {
+    response.cookies.set(RATE_LIMIT_COOKIE, crypto.randomUUID(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+  }
 
   return response;
 }

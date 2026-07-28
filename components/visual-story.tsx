@@ -58,6 +58,8 @@ function CoverFlow({ images, onImageClick }: { images: string[]; onImageClick: (
   // Keyboard
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.key === "ArrowLeft") goPrev();
       if (e.key === "ArrowRight") goNext();
     };
@@ -216,10 +218,10 @@ function Lightbox({ images, initialIdx, onClose }: { images: string[]; initialId
       if (e.key === "ArrowRight") setCurrentIdx((p) => (p < images.length - 1 ? p + 1 : 0));
     };
     document.addEventListener("keydown", handleKey);
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("overflow-hidden");
     return () => {
       document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
+      document.body.classList.remove("overflow-hidden");
     };
   }, [onClose, images.length]);
 

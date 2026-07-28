@@ -24,6 +24,7 @@ export function useReferral() {
         setReferralCode(ref);
         setReferralAgentName(data?.agentName ?? null);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

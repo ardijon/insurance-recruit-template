@@ -1,0 +1,75 @@
+import { NextRequest, NextResponse } from "next/server";
+import { selectOne, executeInsert, ensureSchema } from "@/lib/db";
+import { sanitizeUrl } from "@/lib/url";
+
+const SETTINGS_KEYS = [
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_CHAT_ID",
+  "SOCIAL_TELEGRAM",
+  "SOCIAL_WHATSAPP",
+  "SOCIAL_INSTAGRAM",
+] as const;
+
+const SENSITIVE_KEYS = new Set(["TELEGRAM_BOT_TOKEN"]);
+
+function maskSensitiveValue(key: string, value: string): string {
+  if (!SENSITIVE_KEYS.has(key) || !value || value.length < 16) return value;
+  return value.slice(0, 8) + "••••••••" + value.slice(-4);
+}
+
+async function getSettings(): Promise<Record<string, string>> {
+  await ensureSchema();
+  const result: Record<string, string> = {};
+  for (const key of SETTINGS_KEYS) {
+    const row = await selectOne("SELECT value FROM settings WHERE key = ?", [key]);
+    const raw = row ? (row.value as string) : "";
+    result[key] = maskSensitiveValue(key, raw);
+  }
+  return result;
+}
+
+export async function GET() {
+  try {
+    const settings = await getSettings();
+    return NextResponse.json(settings);
+  } catch {
+    return NextResponse.json({ error: "خطا در خواندن تنظیمات" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const data = body as Record<string, string>;
+
+  const telegramToken = data.TELEGRAM_BOT_TOKEN;
+  const telegramChatId = data.TELEGRAM_CHAT_ID;
+
+  if (!telegramToken || !telegramChatId) {
+    return NextResponse.json({ error: "توکن ربات و شناسه چت الزامی هستند" }, { status: 422 });
+  }
+
+  await ensureSchema();
+
+  const SOCIAL_URL_KEYS = new Set(["SOCIAL_TELEGRAM", "SOCIAL_WHATSAPP", "SOCIAL_INSTAGRAM"]);
+
+  for (const [key, value] of Object.entries(data)) {
+    if (SETTINGS_KEYS.includes(key as (typeof SETTINGS_KEYS)[number])) {
+      const isMasked = SENSITIVE_KEYS.has(key) && value.includes("••••••••");
+      if (isMasked) continue;
+      const finalValue = SOCIAL_URL_KEYS.has(key) ? sanitizeUrl(value || "") : (value || "");
+      await executeInsert(
+        `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+        [key, finalValue]
+      );
+    }
+  }
+
+  return NextResponse.json({ message: "تنظیمات ذخیره شد" });
+}

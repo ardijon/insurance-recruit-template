@@ -9,8 +9,8 @@ import {
   todayJalaliDate,
   formatJalali,
   toPersianDigits,
-  gregorianToJalali,
-  jalaliToGregorian,
+  jalaliToIso,
+  dateFromIso,
   type JalaliDate,
 } from "@/lib/jalali";
 
@@ -19,11 +19,6 @@ interface JalaliCalendarProps {
   selectedTime: string | null;
   onDateChange: (isoDate: string) => void;
   onTimeChange: (time: string) => void;
-}
-
-function jalaliToIso(j: JalaliDate): string {
-  const [gy, gm, gd] = jalaliToGregorian(j.year, j.month, j.day);
-  return `${gy}-${String(gm).padStart(2, "0")}-${String(gd).padStart(2, "0")}`;
 }
 
 const TIME_SLOTS = [
@@ -40,6 +35,27 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
   const [selected, setSelected] = useState<JalaliDate | null>(initiallySelected);
   const [time, setTime] = useState(selectedTime ?? "");
   const [viewMode, setViewMode] = useState<"days" | "times">("days");
+
+  const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
+  if (selectedDate !== prevSelectedDate) {
+    setPrevSelectedDate(selectedDate);
+    if (selectedDate) {
+      const j = dateFromIso(selectedDate);
+      if (j) {
+        setSelected(j);
+        setViewYear(j.year);
+        setViewMonth(j.month);
+      }
+    } else {
+      setSelected(null);
+    }
+  }
+
+  const [prevSelectedTime, setPrevSelectedTime] = useState(selectedTime);
+  if (selectedTime !== prevSelectedTime) {
+    setPrevSelectedTime(selectedTime);
+    setTime(selectedTime ?? "");
+  }
 
   const days = getJalaliMonthDays(viewYear, viewMonth);
   const todayStr = `${today.year}-${today.month}-${today.day}`;
@@ -218,14 +234,6 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
   );
 }
 
-function dateFromIso(iso: string): JalaliDate | null {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  const j = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  return j;
-}
-
 function viewDir() {
-  if (typeof document === "undefined") return "rtl";
-  return document.documentElement.dir || "rtl";
+  return "rtl";
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ToastContainer } from "@/components/toast";
 import { calculateGrowthScore, toPersianNumbers, type GrowthScoreResult } from "@/lib/growth-score";
 import type { Toast } from "@/hooks/use-toast";
+import { adminFetch } from "@/lib/api-client";
 
 interface Stage {
   id: number;
@@ -46,7 +47,7 @@ export default function GrowthPathPage() {
   }
 
   function load() {
-    fetch("/api/admin/growth-path")
+    adminFetch("/api/admin/growth-path")
       .then((res) => res.json())
       .then((d) => { setStages(d); setDirty(false); })
       .catch(() => {})
@@ -56,7 +57,7 @@ export default function GrowthPathPage() {
   useEffect(() => { load(); }, []);
 
   useEffect(() => {
-    fetch("/api/admin/profile")
+    adminFetch("/api/admin/profile")
       .then((res) => res.json())
       .then((d: ProfileData) => setScore(calculateGrowthScore(d)))
       .catch(() => {});
@@ -65,7 +66,7 @@ export default function GrowthPathPage() {
   async function handleAdd() {
     if (!title.trim()) return;
     try {
-      const res = await fetch("/api/admin/growth-path", {
+      const res = await adminFetch("/api/admin/growth-path", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description, sort_order: stages.length }),
@@ -80,7 +81,7 @@ export default function GrowthPathPage() {
   async function handleDelete(id: number) {
     if (!confirm("آیا از حذف این مرحله اطمینان دارید؟")) return;
     try {
-      const res = await fetch(`/api/admin/growth-path?id=${id}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/admin/growth-path?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       addToast("حذف شد");
       load();
@@ -90,7 +91,7 @@ export default function GrowthPathPage() {
   async function handleEdit(item: Stage) {
     if (!editTitle.trim()) return;
     try {
-      const res = await fetch("/api/admin/growth-path", {
+      const res = await adminFetch("/api/admin/growth-path", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id, title: editTitle, description: editDescription }),
@@ -134,7 +135,7 @@ export default function GrowthPathPage() {
   async function saveOrder() {
     const orders = stages.map((s, i) => ({ id: s.id, sort_order: i }));
     try {
-      const res = await fetch("/api/admin/growth-path", {
+      const res = await adminFetch("/api/admin/growth-path", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orders }),
