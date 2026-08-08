@@ -124,7 +124,11 @@ export default function SuccessWallPage() {
   async function handleRemoveImage(entryId: number, imageUrl: string) {
     if (!confirm("حذف این عکس؟")) return;
     try {
-      const res = await adminFetch(`/api/admin/success-wall-images?entry_id=${entryId}&image_url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" });
+      const res = await adminFetch("/api/admin/success-wall-images", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entry_id: entryId, image_url: imageUrl }),
+      });
       if (!res.ok) throw new Error();
       addToast("عکس حذف شد");
       load();

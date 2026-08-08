@@ -11,6 +11,15 @@ import { StatusBadge, STATUS_CONFIG } from "@/components/status-badge";
 import { Pagination } from "@/components/pagination";
 import { adminFetch } from "@/lib/api-client";
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 interface Applicant {
   id: number;
   full_name: string;
@@ -58,10 +67,10 @@ export default function AdminDashboard() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const [allApplicants, setAllApplicants] = useState<Applicant[]>([]);
   const [cities, setCities] = useState<string[]>([]);
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [filters, setFilters] = useState<ApplicantFilters>(INITIAL_FILTERS);
   const [sortBy, setSortBy] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -89,7 +98,7 @@ export default function AdminDashboard() {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("limit", "20");
-    if (search) params.set("search", search);
+    if (debouncedSearch) params.set("search", debouncedSearch);
     if (filters.scoreMin) params.set("score_min", filters.scoreMin);
     if (filters.scoreMax) params.set("score_max", filters.scoreMax);
     if (filters.city) params.set("city", filters.city);
@@ -116,7 +125,7 @@ export default function AdminDashboard() {
       });
 
     return () => { cancelled = true; };
-  }, [page, search, filters, sortBy, sortOrder, addToast]);
+  }, [page, debouncedSearch, filters, sortBy, sortOrder, addToast]);
 
   useEffect(() => {
     adminFetch("/api/admin/profile")
@@ -132,20 +141,7 @@ export default function AdminDashboard() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    adminFetch("/api/admin/applicants?limit=1000")
-      .then((res) => res.json())
-      .then((data) => setAllApplicants(data.data ?? []))
-      .catch(() => {});
-  }, []);
-
-  const citiesListFromApplicants = Array.from(new Set(allApplicants.map((a) => a.city).filter(Boolean))) as string[];
-  const mergedCities = Array.from(new Set([...cities, ...citiesListFromApplicants]));
-
-  const avgScore = totalCount > 0
-    ? Math.round(applicants.reduce((s, a) => s + (a.score ?? 0), 0) / applicants.length)
-    : 0;
-  const todayAppointments = allApplicants.filter((a) => a.appointment_date === todayIsoStr()).length;
+  const todayAppointments = applicants.filter((a) => a.appointment_date === todayIsoStr()).length;
 
   function handleSort(field: SortField) {
     if (sortBy === field) {
@@ -235,7 +231,6 @@ export default function AdminDashboard() {
       {/* Compact stat pills — mobile */}
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatPill icon="users" label="متقاضی" value={totalCount} color="brand-emphasis" />
-        <StatPill icon="star" label="میانگین" value={totalCount > 0 ? avgScore : null} color="accent" suffix={totalCount > 0 ? undefined : "—"} />
         <StatPill icon="calendar" label="قرار امروز" value={todayAppointments} color="success" />
         <StatPill icon="agent" label="نماینده فعال" value={profile?.current_agent_count ?? null} color="brand-emphasis" />
       </div>
@@ -247,7 +242,7 @@ export default function AdminDashboard() {
           onSearchChange={handleSearchChange}
           filters={filters}
           onFilterChange={handleFilterChange}
-          cities={mergedCities}
+          cities={cities}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
@@ -270,30 +265,30 @@ export default function AdminDashboard() {
           </div>
           <p className="text-sm text-text-secondary">{search || Object.values(filters).some(Boolean) ? "نتیجه‌ای یافت نشد" : "هنوز متقاضی ثبت نشده"}</p>
         </div>
-      ) : viewMode === "table" ? (
-        /* Desktop table */
-        <div className="hidden sm:block">
-          <ApplicantTable
-            applicants={applicants}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            onStatusChange={handleStatusChange}
-            onDetail={setDetailFor}
-            onSchedule={openScheduler}
-            onDelete={handleDelete}
-          />
-        </div>
       ) : (
-        /* Card view (mobile + desktop when toggled) */
-        <div className="flex flex-col gap-2.5">
-          {applicants.map((applicant) => {
-            const scoreStyle = getScoreStyle(applicant.score);
-            return (
-              <div
-                key={applicant.id}
-                className="rounded-xl border border-border bg-bg-surface overflow-hidden transition-shadow hover:shadow-sm"
-              >
+        <>
+          {/* Desktop table — only when table mode */}
+          <div className={`${viewMode === "table" ? "hidden sm:block" : "hidden"}`}>
+            <ApplicantTable
+              applicants={applicants}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              onStatusChange={handleStatusChange}
+              onDetail={setDetailFor}
+              onSchedule={openScheduler}
+              onDelete={handleDelete}
+            />
+          </div>
+          {/* Card view — always on mobile, only when card mode on desktop */}
+          <div className={`grid gap-2.5 grid-cols-1 sm:grid-cols-2 ${viewMode === "table" ? "sm:hidden" : ""}`}>
+            {applicants.map((applicant) => {
+              const scoreStyle = getScoreStyle(applicant.score);
+              return (
+                <div
+                  key={applicant.id}
+                  className="rounded-xl border border-border bg-bg-surface overflow-hidden transition-shadow hover:shadow-sm"
+                >
                 {/* Main row */}
                 <div className="flex items-start gap-3 p-3">
                   {/* Avatar + score */}
@@ -392,7 +387,8 @@ export default function AdminDashboard() {
               </div>
             );
           })}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Pagination */}

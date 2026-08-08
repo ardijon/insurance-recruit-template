@@ -26,29 +26,28 @@ export async function POST(request: NextRequest) {
     const dataUrl = `data:${file.type};base64,${base64}`;
 
     await ensureSchema();
-    const row = await selectOne(
-      "SELECT images_json FROM success_visual_story WHERE id = 1"
-    ) as { images_json: string } | undefined;
-    let images: string[];
-    try {
-      images = row ? JSON.parse(row.images_json) : [];
-    } catch {
-      images = [];
-    }
-    images.push(dataUrl);
 
+    // Atomic: insert or append using json_insert
     const exists = await selectOne("SELECT id FROM success_visual_story WHERE id = 1");
     if (exists) {
       await executeUpdate(
-        "UPDATE success_visual_story SET images_json = ?, updated_at = datetime('now') WHERE id = 1",
-        [JSON.stringify(images)]
+        `UPDATE success_visual_story
+         SET images_json = json_insert(images_json, '$[#]', ?),
+             updated_at = datetime('now')
+         WHERE id = 1`,
+        [dataUrl]
       );
     } else {
       await executeInsert(
         "INSERT INTO success_visual_story (id, images_json) VALUES (1, ?)",
-        [JSON.stringify(images)]
+        [JSON.stringify([dataUrl])]
       );
     }
+
+    const row = await selectOne(
+      "SELECT images_json FROM success_visual_story WHERE id = 1"
+    ) as { images_json: string } | undefined;
+    const images: string[] = row ? JSON.parse(row.images_json) : [];
 
     return NextResponse.json({ image_url: dataUrl, images });
   } catch {
@@ -57,8 +56,17 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const imageUrl = searchParams.get("image_url");
+  let imageUrl: string | null = null;
+
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = await request.json();
+    imageUrl = body.image_url ?? null;
+  } else {
+    const { searchParams } = new URL(request.url);
+    imageUrl = searchParams.get("image_url");
+  }
+
   if (!imageUrl) {
     return NextResponse.json({ error: "image_url is required" }, { status: 422 });
   }
@@ -75,11 +83,15 @@ export async function DELETE(request: NextRequest) {
   } catch {
     return NextResponse.json({ images: [] });
   }
-  const filtered = images.filter((img) => img !== imageUrl);
-  await executeUpdate(
-    "UPDATE success_visual_story SET images_json = ?, updated_at = datetime('now') WHERE id = 1",
-    [JSON.stringify(filtered)]
-  );
 
+  const idx = images.indexOf(imageUrl);
+  if (idx !== -1) {
+    await executeUpdate(
+      "UPDATE success_visual_story SET images_json = json_remove(images_json, ?), updated_at = datetime('now') WHERE id = 1",
+      [`$[${idx}]`]
+    );
+  }
+
+  const filtered = images.filter((img) => img !== imageUrl);
   return NextResponse.json({ images: filtered });
 }

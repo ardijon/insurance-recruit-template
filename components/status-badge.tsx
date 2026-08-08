@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, memo } from "react";
 
 export const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   new: { label: "جدید", bg: "bg-brand-cta/10", text: "text-brand-cta" },
@@ -16,7 +16,7 @@ interface Props {
   editable?: boolean;
 }
 
-export function StatusBadge({ status, onChange, editable = false }: Props) {
+export const StatusBadge = memo(function StatusBadge({ status, onChange, editable = false }: Props) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.new;
   const ref = useRef<HTMLDivElement>(null);
 
@@ -69,4 +69,4 @@ export function StatusBadge({ status, onChange, editable = false }: Props) {
       </details>
     </div>
   );
-}
+});

@@ -57,7 +57,11 @@ export default function VisualStoryPage() {
   async function handleRemove(imageUrl: string) {
     if (!confirm("حذف این عکس؟")) return;
     try {
-      const res = await adminFetch(`/api/admin/visual-story-images?image_url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" });
+      const res = await adminFetch("/api/admin/visual-story-images", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url: imageUrl }),
+      });
       if (!res.ok) throw new Error();
       const result = await res.json();
       setImages(result.images);

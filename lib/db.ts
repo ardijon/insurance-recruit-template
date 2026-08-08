@@ -28,15 +28,33 @@ function getTursoClient(): Client {
 // Local SQLite client (self-hosted mode)
 // ---------------------------------------------------------------------------
 
-import { DatabaseSync } from "node:sqlite";
-import fs from "node:fs";
-import path from "node:path";
-
-declare global {
-  var __db: DatabaseSync | undefined;
+// Local SQLite types — matches the subset of node:sqlite DatabaseSync API we use
+interface LocalStatement {
+  all(...args: unknown[]): unknown[];
+  run(...args: unknown[]): { changes: number | bigint; lastInsertRowid: number | bigint };
 }
 
-function createLocalConnection(): DatabaseSync {
+interface LocalDatabase {
+  exec(sql: string): void;
+  prepare(sql: string): LocalStatement;
+}
+
+type LocalDatabaseConstructor = new (path: string) => LocalDatabase;
+
+// Dynamic import for node:sqlite — only loaded in local (non-Turso) mode
+async function loadLocalDb(): Promise<LocalDatabaseConstructor> {
+  const { DatabaseSync } = await import("node:sqlite");
+  return DatabaseSync;
+}
+
+declare global {
+  var __db: LocalDatabase | undefined;
+  var __dbPromise: Promise<LocalDatabase> | undefined;
+}
+
+async function createLocalConnection(): Promise<LocalDatabase> {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
   const DATA_DIR = path.join(process.cwd(), "data");
   const DB_PATH = path.join(DATA_DIR, "app.db");
 
@@ -44,23 +62,22 @@ function createLocalConnection(): DatabaseSync {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
 
+  const DatabaseSync = await loadLocalDb();
   const db = new DatabaseSync(DB_PATH);
   db.exec("PRAGMA journal_mode = WAL");
-
-  const schema = fs.readFileSync(
-    path.join(process.cwd(), "lib", "schema.sql"),
-    "utf-8"
-  );
-  db.exec(schema);
 
   return db;
 }
 
-function getLocalDb(): DatabaseSync {
-  if (!global.__db) {
-    global.__db = createLocalConnection();
-  }
-  return global.__db;
+async function getLocalDb(): Promise<LocalDatabase> {
+  if (global.__db) return global.__db;
+  if (global.__dbPromise) return global.__dbPromise;
+  global.__dbPromise = createLocalConnection().then((db) => {
+    global.__db = db;
+    global.__dbPromise = undefined;
+    return db;
+  });
+  return global.__dbPromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,7 +114,7 @@ export async function execute(
   }
 
   // Local SQLite (sync wrapped in async)
-  const db = getLocalDb();
+  const db = await getLocalDb();
   const stmt = db.prepare(sql);
   const allRows = args ? (stmt.all(...args) as DbRow[]) : (stmt.all() as DbRow[]);
   // For INSERT, get lastInsertRowid from the stmt
@@ -133,7 +150,7 @@ export async function executeInsert(
   }
 
   // Local SQLite
-  const db = getLocalDb();
+  const db = await getLocalDb();
   const stmt = db.prepare(sql);
   const runResult = args ? stmt.run(...args) : stmt.run();
   return {
@@ -161,7 +178,7 @@ export async function executeUpdate(
   }
 
   // Local SQLite
-  const db = getLocalDb();
+  const db = await getLocalDb();
   const stmt = db.prepare(sql);
   const runResult = args ? stmt.run(...args) : stmt.run();
   return {
@@ -287,7 +304,9 @@ export async function ensureSchema(): Promise<void> {
     await migrateDbTurso(client);
   } else {
     // Local SQLite — run schema.sql + migrations
-    const db = getLocalDb();
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const db = await getLocalDb();
     const schemaPath = path.join(process.cwd(), "lib", "schema.sql");
     if (fs.existsSync(schemaPath)) {
       const schema = fs.readFileSync(schemaPath, "utf-8");
@@ -296,9 +315,9 @@ export async function ensureSchema(): Promise<void> {
     migrateDbLocal(db);
   }
 
-  // Seed default data
+  // Seed default data (non-blocking)
   const { seedIfEmpty } = await import("@/lib/seed");
-  await seedIfEmpty();
+  seedIfEmpty();
 }
 
 async function migrateDbTurso(client: Client): Promise<void> {
@@ -343,7 +362,7 @@ async function migrateDbTurso(client: Client): Promise<void> {
   });
 }
 
-function migrateDbLocal(db: DatabaseSync): void {
+function migrateDbLocal(db: LocalDatabase): void {
   let cols = db
     .prepare("PRAGMA table_info(applicants)")
     .all() as { name: string }[];

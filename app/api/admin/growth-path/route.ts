@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { selectAll, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 
 export async function GET() {
-  await ensureSchema();
-  const rows = await selectAll(
-    "SELECT id, title, description, sort_order FROM growth_path_stages ORDER BY sort_order"
-  );
-  return NextResponse.json(rows);
+  try {
+    await ensureSchema();
+    const rows = await selectAll(
+      "SELECT id, title, description, sort_order FROM growth_path_stages ORDER BY sort_order"
+    );
+    return NextResponse.json(rows);
+  } catch {
+    return NextResponse.json({ error: "خطا در خواندن مسیر رشد" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -19,6 +23,13 @@ export async function POST(request: NextRequest) {
 
   if (!body.title) {
     return NextResponse.json({ error: "title is required" }, { status: 422 });
+  }
+
+  if (body.title.length > 200) {
+    return NextResponse.json({ error: "title must be 200 characters or less" }, { status: 422 });
+  }
+  if (body.description && body.description.length > 2000) {
+    return NextResponse.json({ error: "description must be 2000 characters or less" }, { status: 422 });
   }
 
   await ensureSchema();
@@ -41,19 +52,23 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 422 });
   }
 
-  await ensureSchema();
+  try {
+    await ensureSchema();
 
-  if (body.title !== undefined && body.description !== undefined) {
-    await executeUpdate("UPDATE growth_path_stages SET title = ?, description = ? WHERE id = ?", [body.title, body.description, body.id]);
-  } else if (body.title !== undefined) {
-    await executeUpdate("UPDATE growth_path_stages SET title = ? WHERE id = ?", [body.title, body.id]);
-  } else if (body.description !== undefined) {
-    await executeUpdate("UPDATE growth_path_stages SET description = ? WHERE id = ?", [body.description, body.id]);
-  } else {
-    return NextResponse.json({ error: "no fields to update" }, { status: 422 });
+    if (body.title !== undefined && body.description !== undefined) {
+      await executeUpdate("UPDATE growth_path_stages SET title = ?, description = ? WHERE id = ?", [body.title, body.description, body.id]);
+    } else if (body.title !== undefined) {
+      await executeUpdate("UPDATE growth_path_stages SET title = ? WHERE id = ?", [body.title, body.id]);
+    } else if (body.description !== undefined) {
+      await executeUpdate("UPDATE growth_path_stages SET description = ? WHERE id = ?", [body.description, body.id]);
+    } else {
+      return NextResponse.json({ error: "no fields to update" }, { status: 422 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "خطا در بروزرسانی" }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true });
 }
 
 export async function PUT(request: NextRequest) {
@@ -68,11 +83,15 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "orders array is required" }, { status: 422 });
   }
 
-  await ensureSchema();
-  for (const { id, sort_order } of body.orders) {
-    await executeUpdate("UPDATE growth_path_stages SET sort_order = ? WHERE id = ?", [sort_order, id]);
+  try {
+    await ensureSchema();
+    for (const { id, sort_order } of body.orders) {
+      await executeUpdate("UPDATE growth_path_stages SET sort_order = ? WHERE id = ?", [sort_order, id]);
+    }
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "خطا در بروزرسانی ترتیب" }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -82,7 +101,14 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 422 });
   }
 
-  await ensureSchema();
-  await executeUpdate("DELETE FROM growth_path_stages WHERE id = ?", [Number(id)]);
-  return NextResponse.json({ success: true });
+  try {
+    await ensureSchema();
+    const result = await executeUpdate("DELETE FROM growth_path_stages WHERE id = ?", [Number(id)]);
+    if (result.rowsAffected === 0) {
+      return NextResponse.json({ error: "stage not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "خطا در حذف" }, { status: 500 });
+  }
 }

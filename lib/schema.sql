@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS success_wall_entries (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_success_wall_permission ON success_wall_entries(permission_granted);
+CREATE INDEX IF NOT EXISTS idx_success_wall_sort_order ON success_wall_entries(sort_order);
+
 CREATE TABLE IF NOT EXISTS growth_path_stages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   sort_order INTEGER NOT NULL,
@@ -62,7 +65,7 @@ CREATE TABLE IF NOT EXISTS applicants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   -- step 1: basic info
   full_name TEXT NOT NULL,
-  phone TEXT NOT NULL,
+  phone TEXT NOT NULL UNIQUE,
   city TEXT,
   -- step 2: background
   sales_background TEXT,
@@ -85,6 +88,12 @@ CREATE TABLE IF NOT EXISTS applicants (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_applicants_status ON applicants(status);
+CREATE INDEX IF NOT EXISTS idx_applicants_score ON applicants(score);
+CREATE INDEX IF NOT EXISTS idx_applicants_created_at ON applicants(created_at);
+CREATE INDEX IF NOT EXISTS idx_applicants_city ON applicants(city);
+CREATE INDEX IF NOT EXISTS idx_applicants_appointment_date ON applicants(appointment_date);
+
 -- Phase 5 (optional plugin) — kept separate from applicants so the core
 -- funnel works with or without it (edge.md §5: deep/formal version is out
 -- of scope; this table is only for the short, informal version).
@@ -95,6 +104,8 @@ CREATE TABLE IF NOT EXISTS fit_assessment_results (
   summary TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_fit_assessment_applicant ON fit_assessment_results(applicant_id);
 
 CREATE TABLE IF NOT EXISTS success_visual_story (
   id INTEGER PRIMARY KEY CHECK (id = 1),

@@ -17,6 +17,39 @@ function generateToken(): string {
   return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+async function generateCsrfToken(sessionToken: string): Promise<string> {
+  const sessionSecret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || "";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(sessionSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const token = generateToken();
+  const payload = `${token}:${sessionToken}`;
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const sigHex = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${token}.${sigHex}`;
+}
+
+async function verifyCsrfToken(token: string, sessionToken: string): Promise<boolean> {
+  const parts = token.split(".");
+  if (parts.length !== 2) return false;
+  const [csrfToken, sigHex] = parts;
+  const sessionSecret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || "";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(sessionSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  const payload = `${csrfToken}:${sessionToken}`;
+  const sigBuf = new Uint8Array(sigHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
+  return crypto.subtle.verify("HMAC", key, sigBuf, new TextEncoder().encode(payload));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -41,7 +74,11 @@ export async function middleware(request: NextRequest) {
     const existingCsrf = request.cookies.get(CSRF_COOKIE)?.value;
     if (!existingCsrf) {
       const response = NextResponse.next();
-      response.cookies.set(CSRF_COOKIE, generateToken(), {
+      const sessionToken = request.cookies.get(SESSION_COOKIE)?.value || "";
+      const csrfToken = sessionToken
+        ? await generateCsrfToken(sessionToken)
+        : generateToken();
+      response.cookies.set(CSRF_COOKIE, csrfToken, {
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -57,8 +94,13 @@ export async function middleware(request: NextRequest) {
   if (isAdminApiRoute && STATE_CHANGING_METHODS.has(request.method) && !isPublicAdminPage) {
     const cookieToken = request.cookies.get(CSRF_COOKIE)?.value;
     const headerToken = request.headers.get(CSRF_HEADER);
+    const sessionToken = request.cookies.get(SESSION_COOKIE)?.value;
     if (!cookieToken || !headerToken || cookieToken !== headerToken) {
       return NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 });
+    }
+    // Verify CSRF is bound to session
+    if (sessionToken && !(await verifyCsrfToken(cookieToken, sessionToken))) {
+      return NextResponse.json({ error: "CSRF token invalid" }, { status: 403 });
     }
   }
 

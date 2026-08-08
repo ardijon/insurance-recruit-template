@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { selectOne, selectAll, ensureSchema } from "@/lib/db";
 import { Header } from "@/components/header";
 import { AnimateOnShow } from "@/components/animate-on-show";
@@ -9,13 +7,27 @@ import { SuccessWall, type SuccessWallEntry } from "@/components/success-wall";
 import { GrowthPath, type GrowthPathStage } from "@/components/growth-path";
 import { FaqSection, type FaqItem } from "@/components/faq-section";
 import { VisualStory } from "@/components/visual-story";
+import { unstable_cache } from "next/cache";
+
+const getCachedData = unstable_cache(
+  async () => {
+    await ensureSchema();
+    return Promise.all([
+      selectOne("SELECT * FROM manager_profile WHERE id = 1"),
+      selectAll("SELECT id, agent_name as agentName, quote, images_json FROM success_wall_entries WHERE permission_granted = 1 ORDER BY sort_order"),
+      selectAll("SELECT id, title, description FROM growth_path_stages ORDER BY sort_order"),
+      selectAll("SELECT id, question, answer FROM faq_items ORDER BY sort_order"),
+      selectOne("SELECT images_json FROM success_visual_story WHERE id = 1"),
+    ]);
+  },
+  ["home-page-data"],
+  { revalidate: 60, tags: ["home"] }
+);
 
 export default async function HomePage() {
-  await ensureSchema();
+  const [profileRaw, successEntriesRaw, growthStagesRaw, faqRows, visualStoryRow] = await getCachedData();
 
-  const profile = await selectOne(
-    "SELECT * FROM manager_profile WHERE id = 1"
-  ) as
+  const profile = profileRaw as
     | {
         name: string;
         title: string;
@@ -34,9 +46,6 @@ export default async function HomePage() {
       }
     | undefined;
 
-  const successEntriesRaw = await selectAll(
-    "SELECT id, agent_name as agentName, quote, images_json FROM success_wall_entries WHERE permission_granted = 1 ORDER BY sort_order"
-  );
   const successEntries: SuccessWallEntry[] = successEntriesRaw.map((row) => ({
     id: Number(row.id),
     agentName: String(row.agentName),
@@ -44,23 +53,18 @@ export default async function HomePage() {
     images_json: String(row.images_json ?? "[]"),
   }));
 
-  const growthStagesRaw = await selectAll(
-    "SELECT id, title, description FROM growth_path_stages ORDER BY sort_order"
-  );
-  const growthStages = growthStagesRaw as unknown as GrowthPathStage[];
+  const growthStages: GrowthPathStage[] = growthStagesRaw.map((r) => ({
+    id: Number(r.id),
+    title: String(r.title),
+    description: String(r.description),
+  }));
 
-  const faqRows = await selectAll(
-    "SELECT id, question, answer FROM faq_items ORDER BY sort_order"
-  );
   const faqItems: FaqItem[] = faqRows.map(
     (r) => ({ id: Number(r.id), question: String(r.question), answer: String(r.answer) })
   );
 
-  const visualStoryRow = await selectOne(
-    "SELECT images_json FROM success_visual_story WHERE id = 1"
-  ) as { images_json: string } | undefined;
   let visualStoryImages: string[] = [];
-  try { visualStoryImages = JSON.parse(visualStoryRow?.images_json ?? "[]"); } catch { visualStoryImages = []; }
+  try { visualStoryImages = JSON.parse((visualStoryRow as { images_json: string } | undefined)?.images_json ?? "[]"); } catch { visualStoryImages = []; }
 
   const growthStats: GrowthStat[] = [];
   if (profile?.growth_agents_6m != null) growthStats.push({ value: profile.growth_agents_6m, label: "نمایندگان", period: "شش ماه" });

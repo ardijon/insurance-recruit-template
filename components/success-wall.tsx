@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { QuoteIcon } from "@/components/icons";
 
@@ -12,7 +12,7 @@ export interface SuccessWallEntry {
 }
 
 export function SuccessWall({ entries }: { entries: SuccessWallEntry[] }) {
-  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [lightboxIdx, setLightboxIdx] = useState<{ images: string[]; idx: number } | null>(null);
 
   if (entries.length === 0) return null;
 
@@ -31,16 +31,27 @@ export function SuccessWall({ entries }: { entries: SuccessWallEntry[] }) {
             دیوار موفقیت تیم
           </h2>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {entries.map((entry) => (
-              <SuccessCard key={entry.id} entry={entry} onImageClick={setLightboxImg} />
+              <SuccessCard key={entry.id} entry={entry} onImageClick={(img) => {
+                const images = (() => {
+                  if (!entry.images_json) return [];
+                  try { return JSON.parse(entry.images_json) as string[]; } catch { return []; }
+                })();
+                const idx = images.indexOf(img);
+                setLightboxIdx({ images, idx: idx >= 0 ? idx : 0 });
+              }} />
             ))}
           </div>
         </div>
       </section>
 
-      {lightboxImg && (
-        <Lightbox src={lightboxImg} onClose={() => setLightboxImg(null)} />
+      {lightboxIdx && (
+        <Lightbox
+          images={lightboxIdx.images}
+          initialIdx={lightboxIdx.idx}
+          onClose={() => setLightboxIdx(null)}
+        />
       )}
     </>
   );
@@ -52,142 +63,167 @@ function SuccessCard({ entry, onImageClick }: { entry: SuccessWallEntry; onImage
     try { return JSON.parse(entry.images_json) as string[]; } catch { return []; }
   })();
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
-    setActiveIdx(idx);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, [handleScroll]);
-
   return (
-    <article className="group relative rounded-xl border border-border bg-bg-base shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md overflow-hidden">
-      {/* Quote text — first, so it's never hidden */}
-      <div className="p-5">
-        <div className="absolute right-0 top-0 h-full w-1 rounded-r-xl bg-accent/30 transition-colors group-hover:bg-accent/60" />
-        <QuoteIcon className="mb-2 size-7 text-accent/20" />
-        <p className="leading-relaxed text-text-primary text-sm">{entry.quote}</p>
+    <article className="group relative flex flex-col rounded-2xl border border-border bg-bg-base shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg overflow-hidden">
+      {/* Accent bar */}
+      <div className="absolute right-0 top-0 h-full w-1 rounded-r-2xl bg-accent/30 transition-colors group-hover:bg-accent/60" />
 
-        <div className="mt-4 flex items-center gap-3 border-t border-border pt-3">
-          <span className="flex size-8 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent animate-scale-in">
-            {entry.agentName.charAt(0)}
-          </span>
-          <span className="text-sm font-medium text-text-secondary">{entry.agentName}</span>
+      {/* Header: avatar + name */}
+      <div className="flex flex-col items-center pt-6 pb-3">
+        <div className="relative mb-3">
+          {images.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => onImageClick(images[0])}
+              className="relative size-16 overflow-hidden rounded-full ring-3 ring-accent/20 transition-all group-hover:ring-accent/40 group-hover:scale-105"
+            >
+              <Image
+                src={images[0]}
+                alt={entry.agentName}
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
+            </button>
+          ) : (
+            <div className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-accent/20 to-accent/5 ring-3 ring-accent/20">
+              <span className="text-xl font-bold text-accent">
+                {entry.agentName.charAt(0)}
+              </span>
+            </div>
+          )}
+          {images.length > 1 && (
+            <span className="absolute -bottom-1 -left-1 flex size-5 items-center justify-center rounded-full bg-brand-cta text-[10px] font-bold text-white shadow-sm">
+              {images.length}
+            </span>
+          )}
         </div>
+        <span className="text-sm font-bold text-text-primary">{entry.agentName}</span>
       </div>
 
-      {/* Carousel — below text */}
+      {/* Quote */}
+      <div className="flex-1 px-5 pb-4">
+        <QuoteIcon className="mb-1.5 size-5 text-accent/25" />
+        <p className="text-sm leading-relaxed text-text-secondary">{entry.quote}</p>
+      </div>
+
+      {/* Thumbnail strip */}
       {images.length > 0 && (
-        <div className="relative border-t border-border">
-          <div
-            ref={scrollRef}
-            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
+        <div className="border-t border-border px-4 py-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
             {images.map((img, idx) => (
               <button
-                key={idx}
+                key={`thumb-${idx}`}
                 type="button"
                 onClick={() => onImageClick(img)}
-                className="relative shrink-0 w-full snap-center"
+                className="relative size-12 shrink-0 overflow-hidden rounded-lg ring-1 ring-border transition-all hover:ring-accent/50 hover:scale-105"
               >
-                <div className="relative h-40 w-full">
-                  {idx > 0 && (
-                    <div className="absolute inset-0 translate-x-1 translate-y-1 scale-[0.95] rounded-lg bg-bg-surface shadow-sm" />
-                  )}
-                  {idx > 0 && (
-                    <div className="absolute inset-0 translate-x-0.5 translate-y-0.5 scale-[0.97] rounded-lg bg-bg-surface shadow-md" />
-                  )}
-                  <Image
-                    src={img}
-                    alt={`لوح تقدیر ${entry.agentName}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="relative rounded-lg object-cover"
-                    loading={idx === 0 ? "eager" : "lazy"}
-                  />
-                </div>
+                <Image
+                  src={img}
+                  alt=""
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                  loading="lazy"
+                />
               </button>
             ))}
           </div>
-
-          {/* Dots */}
-          {images.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {images.map((_, idx) => (
-                <span
-                  key={idx}
-                  className={`size-1.5 rounded-full transition-all duration-300 ${
-                    idx === activeIdx ? "bg-brand-cta w-4" : "bg-white/50"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Image count badge */}
-          <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
-            <svg className="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            {images.length}
-          </span>
         </div>
       )}
     </article>
   );
 }
 
-function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
-  const [touchStart, setTouchStart] = useState<number | null>(null);
+function Lightbox({ images, initialIdx, onClose }: { images: string[]; initialIdx: number; onClose: () => void }) {
+  const [currentIdx, setCurrentIdx] = useState(initialIdx);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") setCurrentIdx((p) => (p > 0 ? p - 1 : images.length - 1));
+      if (e.key === "ArrowRight") setCurrentIdx((p) => (p < images.length - 1 ? p + 1 : 0));
+    };
     document.addEventListener("keydown", handleKey);
     document.body.classList.add("overflow-hidden");
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.classList.remove("overflow-hidden");
     };
-  }, [onClose]);
+  }, [onClose, images.length]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStart) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+
+    if (Math.abs(dy) > 80) {
+      onClose();
+    } else if (Math.abs(dx) > 50) {
+      if (dx > 0) setCurrentIdx((p) => (p > 0 ? p - 1 : images.length - 1));
+      else setCurrentIdx((p) => (p < images.length - 1 ? p + 1 : 0));
+    }
+    setTouchStart(null);
+  }
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
       onClick={onClose}
-      onTouchStart={(e) => setTouchStart(e.touches[0].clientY)}
-      onTouchEnd={(e) => {
-        if (touchStart !== null && Math.abs(e.changedTouches[0].clientY - touchStart) > 80) onClose();
-        setTouchStart(null);
-      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white text-lg hover:bg-white/20 transition-colors"
+        className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
       >
         <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setCurrentIdx((p) => (p > 0 ? p - 1 : images.length - 1)); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setCurrentIdx((p) => (p < images.length - 1 ? p + 1 : 0)); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </>
+      )}
+
       <img
-        src={src}
+        src={images[currentIdx]}
         alt=""
-        className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+        className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl transition-opacity duration-300"
         onClick={(e) => e.stopPropagation()}
       />
+
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
+          {currentIdx + 1} / {images.length}
+        </div>
+      )}
     </div>
   );
 }

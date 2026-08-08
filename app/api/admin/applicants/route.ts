@@ -8,7 +8,8 @@ type SortField = (typeof VALID_SORT)[number];
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  await ensureSchema();
+  try {
+    await ensureSchema();
 
   const page = Math.min(10000, Math.max(1, Number(searchParams.get("page")) || 1));
   const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 20));
@@ -65,6 +66,9 @@ export async function GET(request: NextRequest) {
   );
 
   return NextResponse.json({ data, total, page, limit });
+  } catch {
+    return NextResponse.json({ error: "خطا در خواندن متقاضیان" }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: NextRequest) {
@@ -114,8 +118,15 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 422 });
   }
 
-  await ensureSchema();
-  await executeUpdate("DELETE FROM fit_assessment_results WHERE applicant_id = ?", [Number(id)]);
-  await executeUpdate("DELETE FROM applicants WHERE id = ?", [Number(id)]);
-  return NextResponse.json({ success: true });
+  try {
+    await ensureSchema();
+    await executeUpdate("DELETE FROM fit_assessment_results WHERE applicant_id = ?", [Number(id)]);
+    const result = await executeUpdate("DELETE FROM applicants WHERE id = ?", [Number(id)]);
+    if (result.rowsAffected === 0) {
+      return NextResponse.json({ error: "applicant not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "خطا در حذف" }, { status: 500 });
+  }
 }

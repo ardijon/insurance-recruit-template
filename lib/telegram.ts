@@ -1,4 +1,4 @@
-import { selectOne, ensureSchema } from "@/lib/db";
+import { selectAll, ensureSchema } from "@/lib/db";
 
 export interface ApplicantNotification {
   fullName: string;
@@ -18,21 +18,28 @@ export interface ApplicantNotification {
   referralAgentName: string | null;
 }
 
-async function getSetting(key: string): Promise<string | null> {
-  const row = await selectOne("SELECT value FROM settings WHERE key = ?", [key]);
-  return row ? (row.value as string) : null;
-}
+let cachedSettings: { token: string | undefined; chatId: string | undefined; fetchedAt: number } | null = null;
+const SETTINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-async function getBotToken(): Promise<string | undefined> {
-  const dbToken = await getSetting("TELEGRAM_BOT_TOKEN");
-  if (dbToken) return dbToken;
-  return process.env.TELEGRAM_BOT_TOKEN;
-}
-
-async function getChatId(): Promise<string | undefined> {
-  const dbChatId = await getSetting("TELEGRAM_CHAT_ID");
-  if (dbChatId) return dbChatId;
-  return process.env.TELEGRAM_CHAT_ID;
+async function getTelegramSettings(): Promise<{ token: string | undefined; chatId: string | undefined }> {
+  if (cachedSettings && Date.now() - cachedSettings.fetchedAt < SETTINGS_CACHE_TTL) {
+    return cachedSettings;
+  }
+  const rows = await selectAll(
+    "SELECT key, value FROM settings WHERE key IN ('TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID')"
+  );
+  let token: string | undefined;
+  let chatId: string | undefined;
+  for (const row of rows) {
+    if (row.key === "TELEGRAM_BOT_TOKEN") token = (row.value as string) || undefined;
+    if (row.key === "TELEGRAM_CHAT_ID") chatId = (row.value as string) || undefined;
+  }
+  cachedSettings = {
+    token: token || process.env.TELEGRAM_BOT_TOKEN,
+    chatId: chatId || process.env.TELEGRAM_CHAT_ID,
+    fetchedAt: Date.now(),
+  };
+  return cachedSettings;
 }
 
 const TELEGRAM_API = "https://api.telegram.org";
@@ -41,8 +48,7 @@ export async function notifyManagerOnTelegram(
   applicant: ApplicantNotification
 ): Promise<void> {
   await ensureSchema();
-  const token = await getBotToken();
-  const chatId = await getChatId();
+  const { token, chatId } = await getTelegramSettings();
 
   if (!token || !chatId) {
     console.warn(

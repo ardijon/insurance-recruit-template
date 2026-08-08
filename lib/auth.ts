@@ -1,10 +1,14 @@
+import bcrypt from "bcryptjs";
+import { selectOne } from "@/lib/db";
+
 export const SESSION_COOKIE = "admin_session";
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const BCRYPT_ROUNDS = 10;
 
-function getKey(): Promise<CryptoKey> {
-  const secret = process.env.ADMIN_PASSWORD;
+function getSigningKey(): Promise<CryptoKey> {
+  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD;
   if (!secret) {
-    throw new Error("ADMIN_PASSWORD environment variable is not set or empty");
+    throw new Error("SESSION_SECRET or ADMIN_PASSWORD environment variable is not set");
   }
   return crypto.subtle.importKey(
     "raw",
@@ -26,7 +30,7 @@ function hexToBuf(hex: string): Uint8Array {
 }
 
 export async function createSessionValue(): Promise<string> {
-  const key = await getKey();
+  const key = await getSigningKey();
   const expiresAt = Date.now() + SESSION_MAX_AGE_MS;
   const payload = `${crypto.randomUUID()}:${expiresAt}`;
   const sig = await crypto.subtle.sign(
@@ -49,7 +53,7 @@ export async function verifySessionValue(token: string): Promise<boolean> {
   if (Date.now() > expiresAt) return false;
   let key: CryptoKey;
   try {
-    key = await getKey();
+    key = await getSigningKey();
   } catch {
     return false;
   }
@@ -76,13 +80,7 @@ export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
   const paddedB = new Uint8Array(maxLen);
   paddedA.set(rawA);
   paddedB.set(rawB);
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode("constant-time-compare-key"),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
+  const key = await getSigningKey();
   const sigA = new Uint8Array(await crypto.subtle.sign("HMAC", key, paddedA));
   const sigB = new Uint8Array(await crypto.subtle.sign("HMAC", key, paddedB));
   let result = 0;
@@ -90,4 +88,26 @@ export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
     result |= sigA[i] ^ sigB[i];
   }
   return result === 0;
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+export async function verifyPassword(input: string): Promise<boolean> {
+  const envPassword = process.env.ADMIN_PASSWORD;
+  if (!envPassword) {
+    return false;
+  }
+
+  const row = await selectOne(
+    "SELECT value FROM settings WHERE key = 'admin_password_hash'"
+  ) as { value: string } | undefined;
+
+  // Always run both paths to prevent timing side-channel
+  const envMatch = timingSafeEqual(input, envPassword);
+  const hashMatch = row?.value ? bcrypt.compare(input, row.value) : Promise.resolve(false);
+
+  const [envResult, hashResult] = await Promise.all([envMatch, hashMatch]);
+  return envResult || hashResult;
 }

@@ -24,9 +24,8 @@ function getClientIp(requestHeaders: Headers): string {
   return parts[parts.length - 1] || "unknown";
 }
 
-export function getRateLimitKey(requestHeaders: Headers, cookieFingerprint?: string): string {
-  const ip = getClientIp(requestHeaders);
-  return cookieFingerprint ? `${ip}:${cookieFingerprint}` : ip;
+export function getRateLimitKey(requestHeaders: Headers): string {
+  return getClientIp(requestHeaders);
 }
 
 export function checkRateLimit(key: string): boolean {
@@ -44,4 +43,16 @@ export function checkRateLimit(key: string): boolean {
 
 export function resetRateLimit(key: string): void {
   rateLimit.delete(key);
+}
+
+export function checkPublicRateLimit(key: string, maxAttempts: number = 10): boolean {
+  const now = Date.now();
+  const entry = rateLimit.get(`pub:${key}`);
+  if (!entry || now > entry.resetAt) {
+    rateLimit.set(`pub:${key}`, { count: 1, resetAt: now + WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= maxAttempts) return false;
+  entry.count++;
+  return true;
 }

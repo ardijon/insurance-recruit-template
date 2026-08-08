@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { formatJalali, toPersianDigits } from "@/lib/jalali";
 import { StatusBadge } from "@/components/status-badge";
 
@@ -65,7 +66,7 @@ function SortIcon({ field, current, order }: { field: SortField; current: SortFi
   );
 }
 
-export function ApplicantTable({ applicants, sortBy, sortOrder, onSort, onStatusChange, onDetail, onSchedule, onDelete }: Props) {
+export const ApplicantTable = memo(function ApplicantTable({ applicants, sortBy, sortOrder, onSort, onStatusChange, onDetail, onSchedule, onDelete }: Props) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
@@ -163,6 +164,6 @@ export function ApplicantTable({ applicants, sortBy, sortOrder, onSort, onStatus
       </table>
     </div>
   );
-}
+});
 
 export type { SortField };

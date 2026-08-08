@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { selectOne, executeInsert, ensureSchema } from "@/lib/db";
+import { selectAll, executeInsert, ensureSchema } from "@/lib/db";
 import { sanitizeUrl } from "@/lib/url";
 
 const SETTINGS_KEYS = [
@@ -19,10 +19,15 @@ function maskSensitiveValue(key: string, value: string): string {
 
 async function getSettings(): Promise<Record<string, string>> {
   await ensureSchema();
+  const placeholders = SETTINGS_KEYS.map(() => "?").join(",");
+  const rows = await selectAll(
+    `SELECT key, value FROM settings WHERE key IN (${placeholders})`,
+    [...SETTINGS_KEYS]
+  );
   const result: Record<string, string> = {};
-  for (const key of SETTINGS_KEYS) {
-    const row = await selectOne("SELECT value FROM settings WHERE key = ?", [key]);
-    const raw = row ? (row.value as string) : "";
+  for (const row of rows) {
+    const key = row.key as string;
+    const raw = (row.value as string) || "";
     result[key] = maskSensitiveValue(key, raw);
   }
   return result;

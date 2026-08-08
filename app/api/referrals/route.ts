@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeInsert, ensureSchema } from "@/lib/db";
+import { checkPublicRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request.headers);
+  if (!checkPublicRateLimit(rlKey, 10)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   let body: { agent_name?: string; code?: string };
   try {
     body = await request.json();

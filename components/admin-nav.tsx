@@ -122,6 +122,16 @@ export function AdminNav() {
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
             </Link>
+            <Link
+              href="/admin/change-password"
+              className="flex size-9 items-center justify-center rounded-lg text-text-secondary no-underline transition-colors hover:bg-bg-surface hover:text-text-primary"
+              title="تغییر رمز عبور"
+            >
+              <svg className="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </Link>
             <AdminDateDisplay />
             <ThemeToggle />
             <button

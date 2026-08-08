@@ -4,9 +4,15 @@ import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db"
 import { computeBreakdown } from "@/lib/scoring";
 import { computeFitResult } from "@/lib/fit-assessment";
 import { notifyManagerOnTelegram } from "@/lib/telegram";
+import { checkPublicRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import type { FitAnswers } from "@/lib/fit-assessment";
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request.headers);
+  if (!checkPublicRateLimit(rlKey, 10)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
