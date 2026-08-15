@@ -94,7 +94,43 @@ export async function seedIfEmpty(): Promise<void> {
     );
     await executeInsert(
       "INSERT INTO faq_items (question, answer, sort_order) VALUES (?, ?, ?)",
-      ["آیا نیاز به سرمایه اولیه دارم؟", "خیر، هیچ سرمایه اولیه‌ای نیاز نیست. فقط کافی‌ست وقت و انرژی بگذارید و آموزش‌ها را جدی بگیرید.", 5]
+      ["آیا نیاز به سرمایه اولیه دارم؟", "خیر، هیچ سرمایه اولیهای نیاز نیست. فقط کافیست وقت و انرژی بگذارید و آموزشها را جدی بگیرید.", 5]
     );
+  }
+
+  const applicantCount = await selectOne(
+    "SELECT COUNT(*) AS c FROM applicants"
+  ) as { c: number };
+
+  if (applicantCount.c === 0) {
+    // Sample applicants using the NEW structured format so the demo matches
+    // the live application form. sales_background holds the structured answers
+    // as JSON; score is precomputed with the same weighted model.
+    const samples: {
+      full_name: string; phone: string; city: string;
+      sales: { sales_experience: number; sales_result: number; leadership: number };
+      network: string; availability: string; motivation: string;
+      score: number; status: string;
+    }[] = [
+      { full_name: "حسین رجبی", phone: "09121234567", city: "تهران", sales: { sales_experience: 5, sales_result: 5, leadership: 4 }, network: "4", availability: "3", motivation: "میخوام در حوزهای فعالیت کنم که هم درآمد بالاتری داشته باشم و هم به مردم کمک کنم.", score: 95, status: "interviewed" },
+      { full_name: "امیر سلطانی", phone: "09198765432", city: "شیراز", sales: { sales_experience: 5, sales_result: 5, leadership: 5 }, network: "4", availability: "3", motivation: "با سابقه طولانی در بیمه میخوام در محیط حرفهایتری فعالیت کنم.", score: 92, status: "hired" },
+      { full_name: "زهرا کاظمی", phone: "09367788990", city: "مشهد", sales: { sales_experience: 4, sales_result: 4, leadership: 3 }, network: "4", availability: "3", motivation: "تجربه فروش دارم و میتونم سریع نتیجه بگیرم.", score: 78, status: "interviewed" },
+      { full_name: "مریم اکبری", phone: "09011223344", city: "تبریز", sales: { sales_experience: 2, sales_result: 2, leadership: 1 }, network: "3", availability: "2", motivation: "در کنار فروشگاهم میخوام درآمد دیگری داشته باشم.", score: 45, status: "contacted" },
+      { full_name: "رضا حیدری", phone: "09223344556", city: "تهران", sales: { sales_experience: 1, sales_result: 1, leadership: 1 }, network: "2", availability: "2", motivation: "میخوام درآمد غیرفعال داشته باشم.", score: 28, status: "new" },
+      { full_name: "سارا بهرامی", phone: "09189900112", city: "کرمان", sales: { sales_experience: 1, sales_result: 1, leadership: 1 }, network: "2", availability: "2", motivation: "معلم هستم و میخوام درآمدم رو افزایش بدم.", score: 35, status: "rejected" },
+    ];
+
+    for (const s of samples) {
+      await executeInsert(
+        `INSERT INTO applicants
+          (full_name, phone, city, sales_background, network_size, availability, motivation, score, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '-' || (abs(random()) % 30) || ' days'))`,
+        [
+          s.full_name, s.phone, s.city,
+          JSON.stringify(s.sales), s.network, s.availability, s.motivation,
+          s.score, s.status,
+        ]
+      );
+    }
   }
 }

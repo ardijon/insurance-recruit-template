@@ -5,10 +5,28 @@ export const SESSION_COOKIE = "admin_session";
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const BCRYPT_ROUNDS = 10;
 
+// Per-process fallback secret used only when neither SESSION_SECRET nor
+// ADMIN_PASSWORD is configured (e.g. a deployment that relies solely on the
+// DB-stored password hash). Sessions signed with this key are invalidated on
+// server restart — acceptable for that mode, and far better than a 500/401 loop.
+let ephemeralSecret: string | null = null;
+function getEphemeralSecret(): string {
+  if (ephemeralSecret === null) {
+    const arr = new Uint8Array(32);
+    crypto.getRandomValues(arr);
+    ephemeralSecret = Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  return ephemeralSecret;
+}
+
 function getSigningKey(): Promise<CryptoKey> {
-  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD;
+  let secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD;
   if (!secret) {
-    throw new Error("SESSION_SECRET or ADMIN_PASSWORD environment variable is not set");
+    console.warn(
+      "[auth] SESSION_SECRET and ADMIN_PASSWORD are both unset — using an ephemeral, " +
+      "restart-invalidated session key. Set SESSION_SECRET in production."
+    );
+    secret = getEphemeralSecret();
   }
   return crypto.subtle.importKey(
     "raw",
@@ -42,7 +60,7 @@ export async function createSessionValue(): Promise<string> {
 }
 
 export async function verifySessionValue(token: string): Promise<boolean> {
-  if (!process.env.ADMIN_PASSWORD || !token) return false;
+  if (!token) return false;
   const dot = token.lastIndexOf(".");
   if (dot === -1) return false;
   const payload = token.slice(0, dot);
@@ -96,18 +114,41 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(input: string): Promise<boolean> {
   const envPassword = process.env.ADMIN_PASSWORD;
-  if (!envPassword) {
-    return false;
-  }
-
   const row = await selectOne(
     "SELECT value FROM settings WHERE key = 'admin_password_hash'"
   ) as { value: string } | undefined;
 
-  // Always run both paths to prevent timing side-channel
-  const envMatch = timingSafeEqual(input, envPassword);
-  const hashMatch = row?.value ? bcrypt.compare(input, row.value) : Promise.resolve(false);
+  // If a password hash is stored (normal case), verify against it.
+  if (row?.value) {
+    if (await bcrypt.compare(input, row.value)) return true;
+  }
 
-  const [envResult, hashResult] = await Promise.all([envMatch, hashMatch]);
-  return envResult || hashResult;
+  // Recovery password (ADMIN_PASSWORD env var) always works as a backup — even
+  // after a hash has been set — so the manager can never be fully locked out.
+  if (envPassword) {
+    return timingSafeEqual(input, envPassword);
+  }
+
+  return false;
+}
+
+// True when a primary password hash has been persisted (set on first login or
+// via the recovery flow). The ADMIN_PASSWORD env var is a recovery/reset key,
+// not the primary password, so it must NOT count as "already set" here —
+// otherwise the first-login "set your password" screen would never show.
+export async function isPasswordSet(): Promise<boolean> {
+  const row = await selectOne(
+    "SELECT value FROM settings WHERE key = 'admin_password_hash'"
+  ) as { value: string } | undefined;
+  return !!row?.value;
+}
+
+export async function setPassword(password: string): Promise<void> {
+  const hash = await hashPassword(password);
+  // Upsert into settings table.
+  await (await import("@/lib/db")).execute(
+    `INSERT INTO settings (key, value, updated_at) VALUES ('admin_password_hash', ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    [hash]
+  );
 }

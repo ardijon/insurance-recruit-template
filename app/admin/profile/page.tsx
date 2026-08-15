@@ -100,10 +100,14 @@ export default function ProfilePage() {
           growth_policies_2y: data.growth_policies_2y,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `خطای سرور (${res.status})`);
+      }
       addToast("پروفایل با موفقیت ذخیره شد");
-    } catch {
-      addToast("خطا در ذخیره", "error");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "خطا در ذخیره";
+      addToast(message, "error");
     } finally {
       setSaving(false);
     }

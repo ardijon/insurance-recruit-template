@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   JALALI_MONTHS,
   JALALI_WEEKDAYS,
@@ -36,12 +36,11 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
   const [time, setTime] = useState(selectedTime ?? "");
   const [viewMode, setViewMode] = useState<"days" | "times">("days");
 
-  const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
-  if (selectedDate !== prevSelectedDate) {
-    setPrevSelectedDate(selectedDate);
+  useEffect(() => {
     if (selectedDate) {
       const j = dateFromIso(selectedDate);
       if (j) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external prop to internal state
         setSelected(j);
         setViewYear(j.year);
         setViewMonth(j.month);
@@ -49,13 +48,12 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
     } else {
       setSelected(null);
     }
-  }
+  }, [selectedDate]);
 
-  const [prevSelectedTime, setPrevSelectedTime] = useState(selectedTime);
-  if (selectedTime !== prevSelectedTime) {
-    setPrevSelectedTime(selectedTime);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external prop to internal state
     setTime(selectedTime ?? "");
-  }
+  }, [selectedTime]);
 
   const days = getJalaliMonthDays(viewYear, viewMonth);
   const todayStr = `${today.year}-${today.month}-${today.day}`;

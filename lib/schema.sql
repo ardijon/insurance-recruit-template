@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS applicants (
   referral_code TEXT REFERENCES referral_links(code),
   -- appointment scheduling
   appointment_date TEXT,
+  appointment_jalali TEXT,
   appointment_time TEXT,
 
   -- Phase 3 delivery state, so a failed Telegram send can be retried/inspected
@@ -93,6 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_applicants_score ON applicants(score);
 CREATE INDEX IF NOT EXISTS idx_applicants_created_at ON applicants(created_at);
 CREATE INDEX IF NOT EXISTS idx_applicants_city ON applicants(city);
 CREATE INDEX IF NOT EXISTS idx_applicants_appointment_date ON applicants(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_applicants_appointment_jalali ON applicants(appointment_jalali);
 
 -- Phase 5 (optional plugin) — kept separate from applicants so the core
 -- funnel works with or without it (edge.md §5: deep/formal version is out

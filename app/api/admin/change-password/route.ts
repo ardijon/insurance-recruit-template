@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword, hashPassword } from "@/lib/auth";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
+import { isDemoMode } from "@/lib/demo";
 
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) {
+    return NextResponse.json(
+      { error: "تغییر رمز در حالت دمو مجاز نیست" },
+      { status: 403 }
+    );
+  }
+
   let body: { current_password?: string; new_password?: string };
   try {
     body = await request.json();

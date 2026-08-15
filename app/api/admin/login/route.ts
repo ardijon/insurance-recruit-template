@@ -1,15 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionValue, SESSION_COOKIE, verifyPassword } from "@/lib/auth";
+import { createSessionValue, SESSION_COOKIE, verifyPassword, isPasswordSet, setPassword } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, resetRateLimit } from "@/lib/rate-limit";
 import { ensureSchema } from "@/lib/db";
+import { isDemoMode } from "@/lib/demo";
+import { consumeResetCode } from "@/lib/reset-code";
 
-export async function POST(request: NextRequest) {
-  const rlKey = getRateLimitKey(request.headers);
-  if (!checkRateLimit(rlKey)) {
-    return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
+export async function GET(request: NextRequest) {
+  // Avoid leaking "is a password configured?" state to unauthenticated
+  // clients without any throttling. Reuse the login rate-limit bucket.
+  if (!isDemoMode()) {
+    const rlKey = getRateLimitKey(request);
+    if (!(await checkRateLimit(rlKey))) {
+      return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
+    }
   }
 
-  let body: { password?: string };
+  await ensureSchema();
+  const passwordSet = await isPasswordSet();
+  return NextResponse.json({ passwordSet });
+}
+
+export async function POST(request: NextRequest) {
+  const demo = isDemoMode();
+  const rlKey = getRateLimitKey(request);
+
+  if (!demo) {
+    if (!(await checkRateLimit(rlKey))) {
+      return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
+    }
+  }
+
+  let body: { password?: string; new_password?: string; reset_code?: string };
   try {
     body = await request.json();
   } catch {
@@ -18,16 +39,50 @@ export async function POST(request: NextRequest) {
 
   await ensureSchema();
 
-  if (!(await verifyPassword(body.password ?? ""))) {
-    return NextResponse.json(
-      { error: "رمز عبور اشتباه است" },
-      { status: 401 },
-    );
+  // Demo mode: skip password verification
+  if (!demo) {
+    const passwordConfigured = await isPasswordSet();
+
+    // Forgot-password reset: must present a valid Telegram-sent reset code.
+    if (body.reset_code !== undefined) {
+      const newPassword = body.new_password ?? "";
+      if (!newPassword || newPassword.length < 6) {
+        return NextResponse.json(
+          { error: "رمز عبور جدید باید حداقل ۶ کاراکتر باشد" },
+          { status: 422 },
+        );
+      }
+      const ok = await consumeResetCode(body.reset_code);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "کد بازیابی نامعتبر یا منقضی شده است" },
+          { status: 401 },
+        );
+      }
+      await setPassword(newPassword);
+    } else if (!passwordConfigured) {
+      // First login: no password set yet → set it now.
+      const newPassword = body.new_password ?? body.password ?? "";
+      if (newPassword.length < 6) {
+        return NextResponse.json(
+          { error: "رمز عبور باید حداقل ۶ کاراکتر باشد" },
+          { status: 422 },
+        );
+      }
+      await setPassword(newPassword);
+    } else if (!(await verifyPassword(body.password ?? ""))) {
+      return NextResponse.json(
+        { error: "رمز عبور اشتباه است" },
+        { status: 401 },
+      );
+    }
   }
 
-  const token = await createSessionValue();
+  const token = demo ? `demo.${crypto.randomUUID()}` : await createSessionValue();
 
-  resetRateLimit(rlKey);
+  if (!demo) {
+    await resetRateLimit(rlKey);
+  }
 
   const response = NextResponse.json({ success: true });
   response.cookies.set(SESSION_COOKIE, token, {

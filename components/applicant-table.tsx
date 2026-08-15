@@ -16,6 +16,7 @@ export interface Applicant {
   availability: string | null;
   motivation: string | null;
   appointment_date: string | null;
+  appointment_jalali: string | null;
   appointment_time: string | null;
   status: string;
   created_at: string;

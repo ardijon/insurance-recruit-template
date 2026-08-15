@@ -13,10 +13,10 @@ export default function VisualStoryPage() {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  let toastId = 0;
+  const toastIdRef = useRef(0);
 
   function addToast(message: string, type: "success" | "error" = "success") {
-    const id = toastId++;
+    const id = toastIdRef.current++;
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
   }
@@ -144,7 +144,7 @@ export default function VisualStoryPage() {
               </button>
             </>
           )}
-          <img src={images[lightboxIdx]} alt="" className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <Image src={images[lightboxIdx]} alt="" width={1200} height={800} unoptimized className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
             {lightboxIdx + 1} / {images.length}
           </div>

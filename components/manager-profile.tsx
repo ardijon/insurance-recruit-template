@@ -39,7 +39,7 @@ export function ManagerProfile(props: ManagerProfileProps) {
         <div className="mx-auto mb-5 inline-block">
           <div className="mx-auto flex size-32 items-center justify-center rounded-full bg-gradient-to-br from-brand-cta/20 to-brand-cta/5 shadow-lg overflow-hidden ring-4 ring-brand-cta/10 md:size-40">
             {props.photoUrl ? (
-              <Image src={props.photoUrl} alt={props.name} width={160} height={160} className="size-full object-cover" />
+              <Image src={props.photoUrl} alt={props.name} width={160} height={160} className="size-full object-cover" loading="lazy" />
             ) : props.name ? (
               <span className="text-4xl font-bold text-brand-cta md:text-5xl">
                 {props.name.charAt(0)}

@@ -396,7 +396,7 @@ function JalaliDateInput({ label, value, onChange }: { label: string; value: str
             {days.map((d) => {
               const dStr = `${viewYear}-${viewMonth}-${d.day}`;
               const isToday = dStr === todayStr;
-              const isSelected = value === jalaliToIso({ year: viewYear, month: viewMonth, day: d.day });
+              const isSelected = value === dStr;
 
               return (
                 <button

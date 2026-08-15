@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { formatJalali, formatJalaliShort, toPersianDigits } from "@/lib/jalali";
+import { formatJalali, formatJalaliShort, toPersianDigits, todayJalaliDate, dateFromIso } from "@/lib/jalali";
+import { formatSalesBackground } from "@/lib/sales-background";
 import { JalaliCalendar } from "@/components/jalali-calendar";
 import { ToastContainer } from "@/components/toast";
 import type { Toast } from "@/hooks/use-toast";
@@ -32,6 +33,7 @@ interface Applicant {
   availability: string | null;
   motivation: string | null;
   appointment_date: string | null;
+  appointment_jalali: string | null;
   appointment_time: string | null;
   status: string;
   created_at: string;
@@ -48,9 +50,15 @@ function getScoreStyle(score: number | null) {
   return SCORE_COLORS.find((s) => score >= s.min) ?? SCORE_COLORS[2];
 }
 
-function todayIsoStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function todayJalaliStr(): string {
+  const t = todayJalaliDate();
+  return `${t.year}-${String(t.month).padStart(2, "0")}-${String(t.day).padStart(2, "0")}`;
+}
+
+function toJalaliIso(isoDate: string): string | null {
+  const j = dateFromIso(isoDate);
+  if (!j) return null;
+  return `${j.year}-${String(j.month).padStart(2, "0")}-${String(j.day).padStart(2, "0")}`;
 }
 
 const INITIAL_FILTERS: ApplicantFilters = {
@@ -84,6 +92,8 @@ export default function AdminDashboard() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [detailFor, setDetailFor] = useState<Applicant | null>(null);
   const [profile, setProfile] = useState<{ position_code: string; current_agent_count: number } | null>(null);
+  const [telegramConfigured, setTelegramConfigured] = useState(true);
+  const [telegramDismissed, setTelegramDismissed] = useState(false);
 
   const toastIdRef = useRef(0);
   const addToast = useCallback((message: string, type: "success" | "error" = "success") => {
@@ -141,7 +151,23 @@ export default function AdminDashboard() {
       .catch(() => {});
   }, []);
 
-  const todayAppointments = applicants.filter((a) => a.appointment_date === todayIsoStr()).length;
+  useEffect(() => {
+    const dismissed = localStorage.getItem("telegram_warning_dismissed");
+    if (dismissed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync localStorage on mount
+      setTelegramDismissed(true);
+    }
+    adminFetch("/api/admin/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        const hasToken = !!data.TELEGRAM_BOT_TOKEN;
+        const hasChatId = !!data.TELEGRAM_CHAT_ID;
+        setTelegramConfigured(hasToken && hasChatId);
+      })
+      .catch(() => {});
+  }, []);
+
+  const todayAppointments = applicants.filter((a) => a.appointment_jalali === todayJalaliStr()).length;
 
   function handleSort(field: SortField) {
     if (sortBy === field) {
@@ -179,7 +205,12 @@ export default function AdminDashboard() {
       const res = await adminFetch("/api/admin/applicants", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: schedulingFor, appointment_date: calendarDate, appointment_time: calendarTime }),
+        body: JSON.stringify({
+          id: schedulingFor,
+          appointment_date: calendarDate,
+          appointment_jalali: calendarDate ? toJalaliIso(calendarDate) : null,
+          appointment_time: calendarTime,
+        }),
       });
       if (!res.ok) throw new Error();
       setApplicants((prev) =>
@@ -228,6 +259,44 @@ export default function AdminDashboard() {
 
   return (
     <>
+      {/* Telegram setup warning */}
+      {!telegramConfigured && !telegramDismissed && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+          <div className="flex items-start gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
+              <svg className="size-5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200">
+                ربات تلگرام تنظیم نشده است
+              </h3>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                برای فعال‌سازی بازیابی رمز عبور از طریق تلگرام، ربات تلگرام خود را در
+                {" "}<a href="/admin/settings" className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100">تنظیمات</a>
+                {" "}پیکربندی کنید. بدون آن، امکان بازیابی رمز عبور وجود نخواهد داشت.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTelegramDismissed(true);
+                localStorage.setItem("telegram_warning_dismissed", "true");
+              }}
+              className="shrink-0 rounded-lg p-1 text-amber-600 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/50"
+            >
+              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Compact stat pills — mobile */}
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatPill icon="users" label="متقاضی" value={totalCount} color="brand-emphasis" />
@@ -434,7 +503,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="mt-4 border-t border-border pt-4 flex flex-col gap-3">
-                <DetailBlock label="سابقه فروش" value={detailFor.sales_background} />
+                <DetailBlock label="سابقه فروش" value={formatSalesBackground(detailFor.sales_background)} />
                 <DetailBlock label="شبکه ارتباطی" value={detailFor.network_size} />
                 <DetailBlock label="زمان در دسترس" value={detailFor.availability} />
                 <DetailBlock label="انگیزه" value={detailFor.motivation} />

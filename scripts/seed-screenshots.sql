@@ -12,6 +12,9 @@ DELETE FROM settings;
 DELETE FROM success_visual_story;
 DELETE FROM manager_profile;
 
+-- Reset autoincrement so re-running seed always yields predictable ids (1..N)
+DELETE FROM sqlite_sequence;
+
 -- 1. Manager Profile
 INSERT INTO manager_profile (id, name, title, position_code, position_start_date, bio, achievements, current_agent_count, growth_agents_6m, growth_agents_1y, growth_agents_2y, growth_policies_6m, growth_policies_1y, growth_policies_2y, site_theme)
 VALUES (1, 'دکتر امیر حسینی', 'مدیر فروش ارشد منطقه مرکز', 'MGR-107', '1400/06/01',
@@ -20,14 +23,14 @@ VALUES (1, 'دکتر امیر حسینی', 'مدیر فروش ارشد منطق�
 63, 32, 75, 180, 45, 110, 250, 'warm');
 
 -- 2. Success Wall Entries
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('علی محمدی', 'وقتی وارد تیم دکتر حسینی شدم، فقط یک فروشنده بودم. الان بعد از ۱۸ ماه، مدیر تیم ۱۲ نفره‌ام و ماهیانه بیش از ۸۰ میلیون درآمد دارم. آموزش‌های حرفه‌ای و پشتیبانی مداوم، رمز موفقیته.', 1, 1);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('سارا احمدی', 'بهترین تصمیم زندگی‌ام بود که به این تیم پیوستم. از یک معلم مدرسه به مدیر فروشی رسیدم که الان ۳۵ نماینده زیرمجموعه دارم. محیط کاری صمیمی و پر از انرژی مثبت واقعاً متفاوت است.', 1, 2);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('رضا کریمی', 'با صفر سابقه و فقط یک تلفن همراه شروع کردم. امروز بعد از ۲ سال، خانه و ماشین خریدم و پس‌انداز قابل توجهی دارم. مدیرم باور داشت که من می‌تونم، حتی وقتی خودم شک داشتم.', 1, 3);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('نیلوفر حسینی', 'مادر بودن و کار کردن همزمان سخت به نظر می‌رسید، ولی این تیم انعطاف‌پذیری لازم رو فراهم کرده. الان از خونه کار می‌کنم و ماهیانه ۴۵ میلیون درآمد دارم. آزادی مالی واقعی رو تجربه می‌کنم.', 1, 4);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('محمد رستمی', '۱۰ سال در شرکت خصوصی کار کردم ولی هیچ‌وقت به درآمد و آزادی فعلی‌ام نرسیده بودم. اینجا هر روز یاد می‌گیرم و هر ماه درآمدم بیشتر می‌شه. تیم دکتر حسینی واقعاً خانواده‌ام شده.', 1, 5);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('زهرا عباسی', 'من یک مهندس عمران بودم که هیچ تصوری از بیمه نداشتم. ولی با آموزش‌های سیستماتیک این تیم، در عرض ۳ ماه به فروشنده برتر تبدیل شدم. الان درآمدم از زمان مهندسی‌ام ۳ برابر شده.', 1, 6);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('امیر جعفری', 'همیشه از فروش می‌ترسیدم تا اینکه دکتر حسینی بهم نشون داد فروش یعنی کمک کردن به مردم. وقتی دیدم چطور بیمه نامه‌ها زندگی خانواده‌ها رو تضمین می‌کنه، عاشق کارم شدم. الان سالانه بیش از ۳۰۰ بیمه‌نامه صادر می‌کنم.', 1, 7);
-INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order) VALUES ('مریم نوری', 'از وقتی وارد این تیم شدم، نه تنها درآمدم بالا رفته، بلکه اعتماد به نفس و مهارت‌های ارتباطی‌ام رو تقویت کردم. اینجا فقط یاد نمی‌گیری پول دربیاری، یاد می‌گیری آدم بهتری بشی.', 1, 8);
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('علی محمدی', 'وقتی وارد تیم دکتر حسینی شدم، فقط یک فروشنده بودم. الان بعد از ۱۸ ماه، مدیر تیم ۱۲ نفره‌ام و ماهیانه بیش از ۸۰ میلیون درآمد دارم. آموزش‌های حرفه‌ای و پشتیبانی مداوم، رمز موفقیته.', 1, 1, '["/uploads/073356921103447fedc73c712a72a23a.png"]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('سارا احمدی', 'بهترین تصمیم زندگی‌ام بود که به این تیم پیوستم. از یک معلم مدرسه به مدیر فروشی رسیدم که الان ۳۵ نماینده زیرمجموعه دارم. محیط کاری صمیمی و پر از انرژی مثبت واقعاً متفاوت است.', 1, 2, '["/uploads/8e4c4baa2c95b706349f80e2d3f717d1.png"]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('رضا کریمی', 'با صفر سابقه و فقط یک تلفن همراه شروع کردم. امروز بعد از ۲ سال، خانه و ماشین خریدم و پس‌انداز قابل توجهی دارم. مدیرم باور داشت که من می‌تونم، حتی وقتی خودم شک داشتم.', 1, 3, '["/uploads/cd68e7e5c0cf9761f2533b1f4e03a708.png"]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('نیلوفر حسینی', 'مادر بودن و کار کردن همزمان سخت به نظر می‌رسید، ولی این تیم انعطاف‌پذیری لازم رو فراهم کرده. الان از خونه کار می‌کنم و ماهیانه ۴۵ میلیون درآمد دارم. آزادی مالی واقعی رو تجربه می‌کنم.', 1, 4, '["/uploads/9b1ddb0da0e2b5fe0798f504d8d85dd9.webp"]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('محمد رستمی', '۱۰ سال در شرکت خصوصی کار کردم ولی هیچ‌وقت به درآمد و آزادی فعلی‌ام نرسیده بودم. اینجا هر روز یاد می‌گیرم و هر ماه درآمدم بیشتر می‌شه. تیم دکتر حسینی واقعاً خانواده‌ام شده.', 1, 5, '["/uploads/dc382733baabe5a630350fb36e34c2d4.png"]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('زهرا عباسی', 'من یک مهندس عمران بودم که هیچ تصوری از بیمه نداشتم. ولی با آموزش‌های سیستماتیک این تیم، در عرض ۳ ماه به فروشنده برتر تبدیل شدم. الان درآمدم از زمان مهندسی‌ام ۳ برابر شده.', 1, 6, '["/uploads/61921ec41eac10a1513c4745640ed6d2.webp"]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('امیر جعفری', 'همیشه از فروش می‌ترسیدم تا اینکه دکتر حسینی بهم نشون داد فروش یعنی کمک کردن به مردم. وقتی دیدم چطور بیمه نامه‌ها زندگی خانواده‌ها رو تضمین می‌کنه، عاشق کارم شدم. الان سالانه بیش از ۳۰۰ بیمه‌نامه صادر می‌کنم.', 1, 7, '[]');
+INSERT INTO success_wall_entries (agent_name, quote, permission_granted, sort_order, images_json) VALUES ('مریم نوری', 'از وقتی وارد این تیم شدم، نه تنها درآمدم بالا رفته، بلکه اعتماد به نفس و مهارت‌های ارتباطی‌ام رو تقویت کردم. اینجا فقط یاد نمی‌گیری پول دربیاری، یاد می‌گیری آدم بهتری بشی.', 1, 8, '[]');
 
 -- 3. Growth Path Stages
 INSERT INTO growth_path_stages (title, description, sort_order) VALUES ('بازاریاب بیمه', 'آشنایی کامل با محصولات بیمه عمر، پس‌انداز و سرمایه‌گذاری. شرکت در دوره آموزشی ۱۰ روزه و امتحان پایان دوره. کسب مجوز رسمی نمایندگی.', 1);
@@ -130,4 +133,4 @@ INSERT INTO settings (key, value) VALUES ('SOCIAL_WHATSAPP', 'https://wa.me/9891
 INSERT INTO settings (key, value) VALUES ('SOCIAL_INSTAGRAM', 'https://instagram.com/amir_hosseini_insurance');
 
 -- 9. Visual Story
-INSERT INTO success_visual_story (id, images_json) VALUES (1, '[]');
+INSERT INTO success_visual_story (id, images_json) VALUES (1, '["/uploads/89a3d5393d697fe88e7e7b4b3f28cd60.jpg","/uploads/c1a8fc951099ba77c72d087d5af6e297.jpg","/uploads/OIP (1).webp","/uploads/OIP (2).webp","/uploads/OIP.webp","/uploads/Statue-Img4.jpg"]');

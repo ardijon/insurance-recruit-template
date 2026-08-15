@@ -91,9 +91,10 @@ for (const stmt of statements) {
   try {
     db.exec(stmt);
     count++;
-  } catch (e: any) {
+  } catch (e: unknown) {
     errors++;
-    console.error(`Error: ${e.message}`);
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.error(`Error: ${errorMessage}`);
     console.error(`Statement: ${stmt.substring(0, 120)}...`);
   }
 }

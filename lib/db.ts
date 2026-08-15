@@ -116,20 +116,20 @@ export async function execute(
   // Local SQLite (sync wrapped in async)
   const db = await getLocalDb();
   const stmt = db.prepare(sql);
-  const allRows = args ? (stmt.all(...args) as DbRow[]) : (stmt.all() as DbRow[]);
-  // For INSERT, get lastInsertRowid from the stmt
-  let lastId: number | bigint = 0;
-  let affected = 0;
-  if (sql.trim().toUpperCase().startsWith("INSERT")) {
-    // We need run() for INSERT — handle separately
-    throw new Error("Use executeInsert for INSERT statements in local mode");
+  const upperSql = sql.trim().toUpperCase();
+
+  if (upperSql.startsWith("INSERT")) {
+    // Redirect to executeInsert for INSERT statements
+    return executeInsert(sql, args);
   }
-  if (sql.trim().toUpperCase().startsWith("UPDATE") || sql.trim().toUpperCase().startsWith("DELETE")) {
+
+  if (upperSql.startsWith("UPDATE") || upperSql.startsWith("DELETE")) {
     const runResult = args ? stmt.run(...args) : stmt.run();
-    affected = Number(runResult.changes);
-    lastId = runResult.lastInsertRowid;
+    return { rows: [], rowsAffected: Number(runResult.changes), lastInsertRowid: runResult.lastInsertRowid };
   }
-  return { rows: allRows, rowsAffected: affected, lastInsertRowid: lastId };
+
+  const allRows = args ? (stmt.all(...args) as DbRow[]) : (stmt.all() as DbRow[]);
+  return { rows: allRows, rowsAffected: 0, lastInsertRowid: 0 };
 }
 
 export async function executeInsert(
@@ -275,6 +275,7 @@ export async function ensureSchema(): Promise<void> {
         score INTEGER,
         referral_code TEXT REFERENCES referral_links(code),
         appointment_date TEXT,
+        appointment_jalali TEXT,
         appointment_time TEXT,
         telegram_notified_at TEXT,
         status TEXT NOT NULL DEFAULT 'new',
@@ -315,9 +316,12 @@ export async function ensureSchema(): Promise<void> {
     migrateDbLocal(db);
   }
 
-  // Seed default data (non-blocking)
-  const { seedIfEmpty } = await import("@/lib/seed");
-  seedIfEmpty();
+  // Seed default sample data ONLY in demo/test mode. Production deployments
+  // must start completely empty so each customer populates their own data.
+  if (process.env.DEMO_MODE === "true" || process.env.SEED_SAMPLE_DATA === "true") {
+    const { seedIfEmpty } = await import("@/lib/seed");
+    await seedIfEmpty();
+  }
 }
 
 async function migrateDbTurso(client: Client): Promise<void> {
@@ -336,6 +340,7 @@ async function migrateDbTurso(client: Client): Promise<void> {
   };
 
   await ensureCol("applicants", "appointment_date", "TEXT");
+  await ensureCol("applicants", "appointment_jalali", "TEXT");
   await ensureCol("applicants", "appointment_time", "TEXT");
   await ensureCol("applicants", "status", "TEXT NOT NULL DEFAULT 'new'");
   await ensureCol("manager_profile", "site_theme", "TEXT NOT NULL DEFAULT 'warm'");
@@ -370,6 +375,9 @@ function migrateDbLocal(db: LocalDatabase): void {
 
   if (!colNames.includes("appointment_date")) {
     db.exec("ALTER TABLE applicants ADD COLUMN appointment_date TEXT");
+  }
+  if (!colNames.includes("appointment_jalali")) {
+    db.exec("ALTER TABLE applicants ADD COLUMN appointment_jalali TEXT");
   }
   if (!colNames.includes("appointment_time")) {
     db.exec("ALTER TABLE applicants ADD COLUMN appointment_time TEXT");

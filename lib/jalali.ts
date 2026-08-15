@@ -118,7 +118,8 @@ export function nowJalali(): JalaliDateInfo {
 }
 
 export function formatJalali(isoDate: string): string {
-  const parts = isoDate.split("-");
+  const datePart = isoDate.split(/[ T]/)[0];
+  const parts = datePart.split("-");
   if (parts.length !== 3) return isoDate;
   const gy = Number(parts[0]);
   const gm = Number(parts[1]);
@@ -130,7 +131,8 @@ export function formatJalali(isoDate: string): string {
 }
 
 export function formatJalaliShort(isoDate: string): string {
-  const parts = isoDate.split("-");
+  const datePart = isoDate.split(/[ T]/)[0];
+  const parts = datePart.split("-");
   if (parts.length !== 3) return isoDate;
   const gy = Number(parts[0]);
   const gm = Number(parts[1]);

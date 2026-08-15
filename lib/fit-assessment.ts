@@ -14,53 +14,68 @@ export interface FitResult {
   summary: string;
 }
 
+// 10 mandatory questions, each with 4 options (value 1..4).
+const OPT = (low: string, midLow: string, midHigh: string, high: string) => [
+  { value: 1, label: low },
+  { value: 2, label: midLow },
+  { value: 3, label: midHigh },
+  { value: 4, label: high },
+];
+
 const QUESTIONS: FitQuestion[] = [
   {
     id: "persuasion",
     label: "در ارتباط با افراد و متقاعدسازی چقدر مهارت دارید؟",
-    options: [
-      { value: 1, label: "خیلی کم" },
-      { value: 2, label: "کم" },
-      { value: 3, label: "متوسط" },
-      { value: 4, label: "زیاد" },
-      { value: 5, label: "خیلی زیاد" },
-    ],
+    options: OPT("خیلی کم", "کم", "زیاد", "خیلی زیاد"),
   },
   {
     id: "persistence",
-    label: "وقتی با مخالفت یا رد شدن مواجه می‌شوید، چقدر پیگیری می‌کنید؟",
-    options: [
-      { value: 1, label: "تقریباً هیچ" },
-      { value: 2, label: "کم" },
-      { value: 3, label: "متوسط" },
-      { value: 4, label: "زیاد" },
-      { value: 5, label: "همیشه تا آخر پیگیری می‌کنم" },
-    ],
+    label: "وقتی با مخالفت یا رد شدن مواجه میشوید، چقدر پیگیری میکنید؟",
+    options: OPT("زود تسلیم میشوم", "گاهی ادامه میدهم", "معمولاً ادامه میدهم", "همیشه تا آخر پیگیری میکنم"),
   },
   {
     id: "planning",
-    label: "در کارهای خود چقدر برنامه‌ریزی و نظم دارید؟",
-    options: [
-      { value: 1, label: "بدون برنامه" },
-      { value: 2, label: "کم" },
-      { value: 3, label: "متوسط" },
-      { value: 4, label: "زیاد" },
-      { value: 5, label: "کاملاً منظم و برنامه‌ریزی‌شده" },
-    ],
+    label: "در انجام کارها چقدر برنامهریزی و نظم دارید؟",
+    options: OPT("بدون برنامه", "کم", "زیاد", "کاملاً منظم و برنامهریزیشده"),
   },
   {
     id: "learning",
-    label: "چقدر به یادگیری مهارت‌های جدید و آموزش علاقه دارید؟",
-    options: [
-      { value: 1, label: "علاقه ندارم" },
-      { value: 2, label: "کم" },
-      { value: 3, label: "متوسط" },
-      { value: 4, label: "زیاد" },
-      { value: 5, label: "بسیار علاقه‌مندم" },
-    ],
+    label: "به یادگیری مهارتهای جدید و آموزش چقدر علاقه دارید؟",
+    options: OPT("علاقهای ندارم", "کم", "زیاد", "بسیار علاقهمندم"),
+  },
+  {
+    id: "resilience",
+    label: "در برابر فشار و استرس چقدر مقاوم هستید؟",
+    options: OPT("خیلی کم", "کم", "زیاد", "خیلی زیاد"),
+  },
+  {
+    id: "communication",
+    label: "با افراد غریبه چقدر راحت حرف میزنید؟",
+    options: OPT("اصلاً", "کم", "زیاد", "خیلی راحت"),
+  },
+  {
+    id: "goal_orientation",
+    label: "برای رسیدن به هدف چقدر متمرکز و هدفمند هستید؟",
+    options: OPT("کم", "متوسط", "زیاد", "بشدت هدفمند"),
+  },
+  {
+    id: "self_motivation",
+    label: "بدون ناظر چقدر خودت انجام وظیف میکنید؟",
+    options: OPT("نیاز به نظارت دارم", "گاهی", "زیاد", "کاملاً خودانگیخته"),
+  },
+  {
+    id: "empathy",
+    label: "نیاز و احساسات مشتری را چقدر درک میکنید؟",
+    options: OPT("خیلی کم", "کم", "زیاد", "عالی"),
+  },
+  {
+    id: "discipline",
+    label: "به تعهدات زمانی و مالی چقدر پایبند هستید؟",
+    options: OPT("کم", "متوسط", "زیاد", "کاملاً منضبط"),
   },
 ];
 
+export const FIT_QUESTION_IDS = QUESTIONS.map((q) => q.id);
 export const MAX_FIT_SCORE = 20;
 
 export function getFitQuestions(): FitQuestion[] {
@@ -68,18 +83,19 @@ export function getFitQuestions(): FitQuestion[] {
 }
 
 export function computeFitResult(answers: FitAnswers): FitResult {
+  const MAX_PER = 4;
   let total = 0;
   let answered = 0;
 
   for (const q of QUESTIONS) {
     const val = answers[q.id];
-    if (typeof val === "number" && val >= 1 && val <= 5) {
+    if (typeof val === "number" && val >= 1 && val <= MAX_PER) {
       total += val;
       answered++;
     }
   }
 
-  const maxPossible = answered * 5;
+  const maxPossible = answered * MAX_PER;
   const score = maxPossible > 0 ? Math.round((total / maxPossible) * MAX_FIT_SCORE) : 0;
 
   let summary: string;

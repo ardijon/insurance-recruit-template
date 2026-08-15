@@ -1,112 +1,79 @@
-export interface ApplicantScoringInput {
-  salesBackground: string | null;
-  networkSize: string | null;
-  availability: string | null;
+// Structured, weighted applicant scoring.
+//
+// All inputs come from explicit structured answers in the application form
+// (no free-text parsing, which was previously gameable). The total is
+// hard-capped at 100.
+//
+// Weighting (sums to 100):
+//   sales_experience 20   (0..4)
+//   sales_result     20   (0..4)
+//   leadership       10   (0..4)
+//   network_size     15   (0..4)
+//   availability     15   (0..4)
+//   motivation       10   (0..4)  — derived from text length/quality
+//   fit              20   (0..20, carried from fit-assessment)
+
+export interface ScoringInput {
+  sales_experience: number; // 0..4
+  sales_result: number; // 0..4
+  leadership: number; // 0..4
+  network_size: number; // 0..4
+  availability: number; // 0..4
+  motivation: number; // 0..4 (derived)
+  fitScore: number; // 0..20
 }
 
 export interface ScoreBreakdown {
-  total: number;
-  salesBackground: number;
-  networkSize: number;
-  availability: number;
+  total: number; // capped at 100
+  salesBackground: number; // 0..40 (experience + result)
+  networkSize: number; // 0..15
+  availability: number; // 0..15
+  motivation: number; // 0..10
+  fit: number; // 0..20
 }
 
-const PERSIAN_DIGITS: Record<string, string> = {
-  "۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4",
-  "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9",
+const W = {
+  sales_experience: 20,
+  sales_result: 20,
+  leadership: 10,
+  network_size: 15,
+  availability: 15,
+  motivation: 10,
 };
 
-const ARABIC_DIGITS: Record<string, string> = {
-  "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
-  "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
-};
-
-function normalizeDigits(text: string): string {
-  return text.replace(/[۰-۹]/g, (ch) => PERSIAN_DIGITS[ch] ?? ch)
-             .replace(/[٠-٩]/g, (ch) => ARABIC_DIGITS[ch] ?? ch);
+// Each structured field is on a 0..4 scale.
+function scale(value: number, maxTo: number): number {
+  const clamped = Math.max(0, Math.min(4, value));
+  return Math.round((clamped / 4) * maxTo);
 }
 
-function extractFirstNumber(text: string): number | null {
-  const normalized = normalizeDigits(text);
-  const match = normalized.match(/(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-}
+export function computeBreakdown(input: ScoringInput): ScoreBreakdown {
+  const salesBackground = Math.min(
+    40,
+    scale(input.sales_experience, W.sales_experience) + scale(input.sales_result, W.sales_result) + scale(input.leadership, W.leadership)
+  );
+  const networkSize = scale(input.network_size, W.network_size);
+  const availability = scale(input.availability, W.availability);
+  const motivation = scale(input.motivation, W.motivation);
 
-const NO_EXPERIENCE_KEYWORDS = /بدون\s*سابقه|بی experience|تازه\s*کار|مبتدی/i;
-const EXPERIENCE_KEYWORDS = /سابقه|فروش|بیمه|کار|فعالیت|تجربه|دارم|دارنده|داشتم/i;
-const MANAGEMENT_KEYWORDS = /مدیر|مدیریت|رهبری|سرپرست|سرگروه/i;
-
-const FULL_TIME_KEYWORDS = /تمام\s*وقت|full[\s-]?time/i;
-const PART_TIME_KEYWORDS = /پاره\s*وقت|part[\s-]?time/i;
-
-const LARGE_NETWORK_KEYWORDS = /زیاد|بزرگ|وسیع|گسترده/i;
-const SMALL_NETWORK_KEYWORDS = /کم|محدود|کوچک/i;
-
-export function computeBreakdown(input: ApplicantScoringInput): ScoreBreakdown {
-  const sb = input.salesBackground ?? "";
-  const ns = input.networkSize ?? "";
-  const av = input.availability ?? "";
-
-  const salesBackground = scoreSalesBackground(sb);
-  const networkSize = scoreNetworkSize(ns);
-  const availability = scoreAvailability(av);
-
+  const raw = salesBackground + networkSize + availability + motivation + input.fitScore;
   return {
-    total: Math.min(100, salesBackground + networkSize + availability),
+    total: Math.min(100, raw),
     salesBackground,
     networkSize,
     availability,
+    motivation,
+    fit: input.fitScore,
   };
 }
 
-function scoreSalesBackground(text: string): number {
-  if (!text.trim()) return 0;
-  if (NO_EXPERIENCE_KEYWORDS.test(text)) return 0;
-
-  let score = 0;
-
-  if (EXPERIENCE_KEYWORDS.test(text)) {
-    score += 15;
-  } else {
-    score += 5;
-  }
-
-  const years = extractFirstNumber(text);
-  if (years !== null && years > 0) {
-    score += Math.min(years, 10) * 2.5;
-  }
-
-  if (MANAGEMENT_KEYWORDS.test(text)) {
-    score += 10;
-  }
-
-  return Math.min(40, Math.round(score));
-}
-
-function scoreNetworkSize(text: string): number {
-  if (!text.trim()) return 0;
-
-  const number = extractFirstNumber(text);
-  if (number !== null && number > 0) {
-    return Math.min(30, Math.round(number / 10));
-  }
-
-  if (LARGE_NETWORK_KEYWORDS.test(text)) return 20;
-  if (SMALL_NETWORK_KEYWORDS.test(text)) return 5;
-
-  return 10;
-}
-
-function scoreAvailability(text: string): number {
-  if (!text.trim()) return 0;
-
-  if (FULL_TIME_KEYWORDS.test(text)) return 30;
-  if (PART_TIME_KEYWORDS.test(text)) return 15;
-
-  const hours = extractFirstNumber(text);
-  if (hours !== null && hours > 0) {
-    return Math.min(30, Math.round((hours / 40) * 30));
-  }
-
-  return 10;
+// Derive a 0..4 motivation score from the free-text answer length/quality.
+export function deriveMotivationScore(text: string | null | undefined): number {
+  const t = (text ?? "").trim();
+  if (!t) return 0;
+  const len = t.length;
+  if (len >= 300) return 4;
+  if (len >= 150) return 3;
+  if (len >= 60) return 2;
+  return 1;
 }

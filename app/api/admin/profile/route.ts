@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
 
 export async function GET() {
@@ -22,6 +23,7 @@ export async function GET() {
           growth_policies_6m: number | null;
           growth_policies_1y: number | null;
           growth_policies_2y: number | null;
+          site_theme: string;
           photo_url: string;
           updated_at: string;
         }
@@ -43,6 +45,7 @@ export async function GET() {
             growth_policies_6m: row.growth_policies_6m,
             growth_policies_1y: row.growth_policies_1y,
             growth_policies_2y: row.growth_policies_2y,
+            site_theme: row.site_theme,
             photo_url: row.photo_url,
           }
         : {
@@ -59,6 +62,7 @@ export async function GET() {
             growth_policies_6m: null,
             growth_policies_1y: null,
             growth_policies_2y: null,
+            site_theme: "warm",
             photo_url: "",
           },
     );
@@ -91,52 +95,65 @@ export async function PUT(request: NextRequest) {
 
   await ensureSchema();
 
-  if (body.name !== undefined && body.name.length > 100) {
+  const str = (v: unknown): string | null =>
+    typeof v === "string" ? v : v == null ? null : String(v);
+  const name = str(body.name);
+  const title = str(body.title);
+  const bio = str(body.bio);
+  const achievements = str(body.achievements);
+
+  if (name !== null && name.length > 100) {
     return NextResponse.json({ error: "name must be 100 characters or less" }, { status: 422 });
   }
-  if (body.title !== undefined && body.title.length > 100) {
+  if (title !== null && title.length > 100) {
     return NextResponse.json({ error: "title must be 100 characters or less" }, { status: 422 });
   }
-  if (body.bio !== undefined && body.bio.length > 2000) {
+  if (bio !== null && bio.length > 2000) {
     return NextResponse.json({ error: "bio must be 2000 characters or less" }, { status: 422 });
   }
-  if (body.achievements !== undefined && body.achievements.length > 2000) {
+  if (achievements !== null && achievements.length > 2000) {
     return NextResponse.json({ error: "achievements must be 2000 characters or less" }, { status: 422 });
   }
 
-  await executeUpdate(
-    `UPDATE manager_profile SET
-      name = COALESCE(?, name),
-      title = COALESCE(?, title),
-      position_code = COALESCE(?, position_code),
-      position_start_date = COALESCE(?, position_start_date),
-      bio = COALESCE(?, bio),
-      achievements = COALESCE(?, achievements),
-      current_agent_count = COALESCE(?, current_agent_count),
-      growth_agents_6m = ?,
-      growth_agents_1y = ?,
-      growth_agents_2y = ?,
-      growth_policies_6m = ?,
-      growth_policies_1y = ?,
-      growth_policies_2y = ?,
-      updated_at = datetime('now')
-    WHERE id = 1`,
-    [
-      body.name ?? null,
-      body.title ?? null,
-      body.position_code ?? null,
-      body.position_start_date ?? null,
-      body.bio ?? null,
-      body.achievements ?? null,
-      body.current_agent_count ?? null,
-      body.growth_agents_6m ?? null,
-      body.growth_agents_1y ?? null,
-      body.growth_agents_2y ?? null,
-      body.growth_policies_6m ?? null,
-      body.growth_policies_1y ?? null,
-      body.growth_policies_2y ?? null,
-    ]
-  );
-
-  return NextResponse.json({ success: true });
+  try {
+    await executeUpdate(
+      `UPDATE manager_profile SET
+        name = COALESCE(?, name),
+        title = COALESCE(?, title),
+        position_code = COALESCE(?, position_code),
+        position_start_date = COALESCE(?, position_start_date),
+        bio = COALESCE(?, bio),
+        achievements = COALESCE(?, achievements),
+        current_agent_count = COALESCE(?, current_agent_count),
+        growth_agents_6m = ?,
+        growth_agents_1y = ?,
+        growth_agents_2y = ?,
+        growth_policies_6m = ?,
+        growth_policies_1y = ?,
+        growth_policies_2y = ?,
+        updated_at = datetime('now')
+      WHERE id = 1`,
+      [
+        name,
+        title,
+        body.position_code ?? null,
+        body.position_start_date ?? null,
+        bio,
+        achievements,
+        body.current_agent_count ?? null,
+        body.growth_agents_6m ?? null,
+        body.growth_agents_1y ?? null,
+        body.growth_agents_2y ?? null,
+        body.growth_policies_6m ?? null,
+        body.growth_policies_1y ?? null,
+        body.growth_policies_2y ?? null,
+      ]
+    );
+    revalidatePath("/");
+    revalidateTag("home", "max");
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[profile] update error:", err);
+    return NextResponse.json({ error: "خطا در ذخیره پروفایل" }, { status: 500 });
+  }
 }

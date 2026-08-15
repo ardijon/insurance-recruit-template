@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { executeUpdate, ensureSchema } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
+import { writeFile, mkdir, unlink } from "fs/promises";
+import { join, basename } from "path";
+import { getRelativeUploadPath, validateImageAndGetFilename } from "@/lib/image-storage";
+
+// These routes use the Node.js filesystem APIs and must run on the Node runtime.
+export const runtime = "nodejs";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
+const UPLOAD_DIR = join(process.cwd(), "public", "uploads");
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,16 +28,49 @@ export async function POST(request: NextRequest) {
     }
 
     const bytes = await file.arrayBuffer();
-    const base64 = Buffer.from(bytes).toString("base64");
-    const dataUrl = `data:${file.type};base64,${base64}`;
+    const buffer = Buffer.from(bytes);
 
+    const filename = validateImageAndGetFilename(buffer, file.type);
+    if (!filename) {
+      return NextResponse.json({ error: "فایل معتبر نیست (فقط عکس مجاز است)" }, { status: 422 });
+    }
+
+    await mkdir(UPLOAD_DIR, { recursive: true });
     await ensureSchema();
-    await executeUpdate(
+
+    const photoUrl = getRelativeUploadPath(filename);
+
+    // Capture the previous photo so we can delete its file after replacing it
+    // (prevents orphaned uploads from filling the disk over time).
+    const oldRow = await selectOne(
+      "SELECT photo_url FROM manager_profile WHERE id = 1"
+    ) as { photo_url?: string } | undefined;
+    const oldUrl = oldRow?.photo_url;
+
+    await writeFile(join(UPLOAD_DIR, filename), buffer);
+
+    const updateResult = await executeUpdate(
       "UPDATE manager_profile SET photo_url = ?, updated_at = datetime('now') WHERE id = 1",
-      [dataUrl]
+      [photoUrl]
     );
 
-    return NextResponse.json({ photo_url: dataUrl });
+    // If the profile row doesn't exist, roll back the orphaned file write.
+    if (updateResult.rowsAffected === 0) {
+      try {
+        await unlink(join(UPLOAD_DIR, filename));
+      } catch { /* ignore */ }
+      return NextResponse.json({ error: "profile not found" }, { status: 404 });
+    }
+
+    if (oldUrl && oldUrl !== photoUrl && !oldUrl.startsWith("data:")) {
+      try {
+        const target = join(UPLOAD_DIR, basename(oldUrl));
+        if (target.startsWith(UPLOAD_DIR)) await unlink(target);
+      } catch { /* file may not exist — ignore */ }
+    }
+
+    revalidatePath("/");
+    return NextResponse.json({ photo_url: photoUrl });
   } catch {
     return NextResponse.json({ error: "upload failed" }, { status: 500 });
   }

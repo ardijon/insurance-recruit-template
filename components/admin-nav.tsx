@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { nowJalali, toPersianDigits } from "@/lib/jalali";
 import { adminFetch } from "@/lib/api-client";
 
-const NAV_ITEMS = [
+const PRIMARY_NAV = [
   { href: "/admin", label: "متقاضیان", icon: "people" },
   { href: "/admin/profile", label: "پروفایل", icon: "person" },
   { href: "/admin/success-wall", label: "موفقیت‌ها", icon: "star" },
   { href: "/admin/visual-story", label: "روایت تصویری", icon: "camera" },
   { href: "/admin/growth-path", label: "مسیر رشد", icon: "trend" },
   { href: "/admin/faq", label: "سوالات", icon: "help" },
+] as const;
+
+const SECONDARY_NAV = [
   { href: "/admin/settings", label: "تنظیمات", icon: "settings" },
 ] as const;
+
+const MOBILE_PRIMARY = PRIMARY_NAV.slice(0, 3);
 
 function NavIcon({ icon, className }: { icon: string; className?: string }) {
   if (icon === "people")
@@ -68,11 +74,91 @@ function NavIcon({ icon, className }: { icon: string; className?: string }) {
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
       </svg>
     );
+  if (icon === "more")
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="5" r="1" />
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="12" cy="19" r="1" />
+      </svg>
+    );
+  if (icon === "home")
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    );
+  if (icon === "lock")
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    );
+  if (icon === "logout")
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
+      </svg>
+    );
   return null;
+}
+
+function NavLink({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors ${
+        active
+          ? "bg-brand-cta/10 text-brand-cta"
+          : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
+      }`}
+    >
+      <NavIcon icon={icon} className="size-4" />
+      {label}
+      {active && (
+        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-brand-cta" />
+      )}
+    </Link>
+  );
 }
 
 export function AdminNav() {
   const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+        setDrawerOpen(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setDrawerOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [drawerOpen]);
+
+  // Close drawer on navigation
+  const prevPathname = useRef(pathname);
+  useEffect(() => {
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname;
+      setDrawerOpen(false);
+    }
+  }, [pathname]);
+
+  const isSecondaryActive = SECONDARY_NAV.some((item) => pathname === item.href);
 
   return (
     <>
@@ -81,108 +167,199 @@ export function AdminNav() {
           {/* Brand */}
           <Link href="/admin" className="flex items-center gap-2 text-brand-emphasis no-underline shrink-0">
             <div className="flex size-8 items-center justify-center rounded-lg bg-brand-cta/10">
-              <svg className="size-4 text-brand-cta" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              <NavIcon icon="lock" className="size-4 text-brand-cta" />
             </div>
             <span className="text-base font-bold hidden sm:inline">پنل مدیریت</span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors ${
-                    active
-                      ? "bg-brand-cta/10 text-brand-cta"
-                      : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
-                  }`}
-                >
-                  <NavIcon icon={item.icon} className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
+          {/* Desktop nav — primary group */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {PRIMARY_NAV.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                active={pathname === item.href}
+              />
+            ))}
           </nav>
 
           {/* Right controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {/* Desktop: separator + secondary nav */}
+            <div className="hidden lg:flex items-center gap-1">
+              <span className="mx-1 h-5 w-px bg-border" />
+              {SECONDARY_NAV.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.label}
+                  active={pathname === item.href}
+                />
+              ))}
+            </div>
+
+            <span className="hidden lg:block mx-1 h-5 w-px bg-border" />
+
+            <AdminDateDisplay />
+            <ThemeToggle />
+
             <Link
               href="/"
               className="flex size-9 items-center justify-center rounded-lg text-text-secondary no-underline transition-colors hover:bg-bg-surface hover:text-text-primary"
               title="صفحه اصلی"
             >
-              <svg className="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
+              <NavIcon icon="home" className="size-4.5" />
             </Link>
+
             <Link
               href="/admin/change-password"
               className="flex size-9 items-center justify-center rounded-lg text-text-secondary no-underline transition-colors hover:bg-bg-surface hover:text-text-primary"
               title="تغییر رمز عبور"
             >
-              <svg className="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              <NavIcon icon="lock" className="size-4.5" />
             </Link>
-            <AdminDateDisplay />
-            <ThemeToggle />
+
             <button
               type="button"
               onClick={() => adminFetch("/api/auth/logout", { method: "POST" }).then(() => window.location.reload()).catch(() => alert("خطا در خروج از پنل"))}
               className="hidden sm:inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 no-underline transition-colors hover:bg-red-500/10"
               title="خروج از پنل"
             >
-              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
+              <NavIcon icon="logout" className="size-3.5" />
               خروج
             </button>
-            <Link
-              href="/"
-              className="hidden sm:inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-text-secondary no-underline transition-colors hover:text-text-primary hover:bg-bg-surface"
-            >
-              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-              سایت
-            </Link>
           </div>
         </div>
       </header>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — 3 primary + more button */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-bg-base md:hidden" style={{ backgroundColor: "var(--color-bg-base)" }}>
         <div className="flex items-center justify-around px-2 py-1.5">
-          {NAV_ITEMS.map((item) => {
+          {MOBILE_PRIMARY.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 no-underline transition-colors min-w-0 ${
-                  active
-                    ? "text-brand-cta"
-                    : "text-text-secondary"
+                className={`relative flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 no-underline transition-colors min-w-0 ${
+                  active ? "text-brand-cta" : "text-text-secondary"
                 }`}
               >
                 <NavIcon icon={item.icon} className={`size-5 ${active ? "stroke-[2.2]" : ""}`} />
                 <span className="text-[10px] font-medium truncate">{item.label}</span>
+                {active && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-brand-cta" />
+                )}
               </Link>
             );
           })}
+
+          {/* More button */}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className={`relative flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 transition-colors min-w-0 ${
+              isSecondaryActive ? "text-brand-cta" : "text-text-secondary"
+            }`}
+          >
+            <NavIcon icon="more" className={`size-5 ${isSecondaryActive ? "stroke-[2.2]" : ""}`} />
+            <span className="text-[10px] font-medium">بیشتر</span>
+            {isSecondaryActive && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-brand-cta" />
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile drawer overlay */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 md:hidden" onClick={() => setDrawerOpen(false)} />
+      )}
+
+      {/* Mobile drawer */}
+      <div
+        ref={drawerRef}
+        className={`fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-border bg-bg-base transition-transform duration-300 md:hidden ${
+          drawerOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="mx-auto max-w-lg p-4">
+          {/* Drawer handle */}
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+
+          {/* Secondary nav items */}
+          <div className="space-y-1">
+            {SECONDARY_NAV.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium no-underline transition-colors ${
+                    active
+                      ? "bg-brand-cta/10 text-brand-cta"
+                      : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
+                  }`}
+                >
+                  <NavIcon icon={item.icon} className="size-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+
+            {/* Remaining primary items not in bottom bar */}
+            {PRIMARY_NAV.slice(3).map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium no-underline transition-colors ${
+                    active
+                      ? "bg-brand-cta/10 text-brand-cta"
+                      : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
+                  }`}
+                >
+                  <NavIcon icon={item.icon} className="size-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="my-3 h-px bg-border" />
+
+          {/* Utility actions */}
+          <div className="space-y-1">
+            <Link
+              href="/"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary no-underline transition-colors hover:text-text-primary hover:bg-bg-surface"
+            >
+              <NavIcon icon="home" className="size-5" />
+              صفحه اصلی
+            </Link>
+            <Link
+              href="/admin/change-password"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary no-underline transition-colors hover:text-text-primary hover:bg-bg-surface"
+            >
+              <NavIcon icon="lock" className="size-5" />
+              تغییر رمز عبور
+            </Link>
+            <button
+              type="button"
+              onClick={() => adminFetch("/api/auth/logout", { method: "POST" }).then(() => window.location.reload()).catch(() => alert("خطا در خروج از پنل"))}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 no-underline transition-colors hover:bg-red-500/10"
+            >
+              <NavIcon icon="logout" className="size-5" />
+              خروج
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

@@ -40,6 +40,21 @@ yarn-error.log*
 # local SQLite database — one file per deployment, never committed (see edge.md §2/§3)
 /data/*.db
 /data/*.db-journal
+/data/*.db-wal
+/data/*.db-shm
+
+# any other local sqlite databases (e.g. tooling/debug)
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# freebuff debug database
+/freebuff/
+
+# uploaded images — regenerated per deployment
+/public/uploads/**
 
 # typescript
 *.tsbuildinfo

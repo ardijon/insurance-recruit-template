@@ -11,6 +11,7 @@ const SETTINGS_KEYS = [
 ] as const;
 
 const SENSITIVE_KEYS = new Set(["TELEGRAM_BOT_TOKEN"]);
+const SOCIAL_URL_KEYS = new Set(["SOCIAL_TELEGRAM", "SOCIAL_WHATSAPP", "SOCIAL_INSTAGRAM"]);
 
 function maskSensitiveValue(key: string, value: string): string {
   if (!SENSITIVE_KEYS.has(key) || !value || value.length < 16) return value;
@@ -52,21 +53,21 @@ export async function PUT(request: NextRequest) {
 
   const data = body as Record<string, string>;
 
-  const telegramToken = data.TELEGRAM_BOT_TOKEN;
-  const telegramChatId = data.TELEGRAM_CHAT_ID;
-
-  if (!telegramToken || !telegramChatId) {
-    return NextResponse.json({ error: "توکن ربات و شناسه چت الزامی هستند" }, { status: 422 });
-  }
-
   await ensureSchema();
-
-  const SOCIAL_URL_KEYS = new Set(["SOCIAL_TELEGRAM", "SOCIAL_WHATSAPP", "SOCIAL_INSTAGRAM"]);
 
   for (const [key, value] of Object.entries(data)) {
     if (SETTINGS_KEYS.includes(key as (typeof SETTINGS_KEYS)[number])) {
       const isMasked = SENSITIVE_KEYS.has(key) && value.includes("••••••••");
       if (isMasked) continue;
+
+      // Only validate telegram keys if they're being set (not masked and not empty)
+      if (key === "TELEGRAM_BOT_TOKEN" && (!value || value.length < 10)) {
+        return NextResponse.json({ error: "توکن ربات الزامی است" }, { status: 422 });
+      }
+      if (key === "TELEGRAM_CHAT_ID" && (!value || value.length < 3)) {
+        return NextResponse.json({ error: "شناسه چت الزامی است" }, { status: 422 });
+      }
+
       const finalValue = SOCIAL_URL_KEYS.has(key) ? sanitizeUrl(value || "") : (value || "");
       await executeInsert(
         `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))

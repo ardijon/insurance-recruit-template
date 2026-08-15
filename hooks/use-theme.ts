@@ -3,7 +3,7 @@
 // hooks/use-theme.ts
 //
 // NOTE: pairs with the blocking script in app/layout.tsx (same localStorage key
-// "theme"). The script sets the .dark class before React hydrates, so the
+// "theme"). The script sets the .theme-dark class before React hydrates, so the
 // initial state matches the stored preference without a flash.
 
 import { useEffect, useState, useCallback } from "react";
@@ -15,15 +15,16 @@ export function useTheme() {
 
   useEffect(() => {
     queueMicrotask(() =>
-      setIsDark(document.documentElement.classList.contains("dark")),
+      setIsDark(document.documentElement.classList.contains("theme-dark")),
     );
   }, []);
 
   const toggle = useCallback(() => {
     setIsDark((prev) => {
       const next = !prev;
-      document.documentElement.classList.toggle("dark", next);
-      localStorage.setItem(STORAGE_KEY, next ? "dark" : "light");
+      document.documentElement.classList.remove("theme-warm", "theme-dark");
+      document.documentElement.classList.add(next ? "theme-dark" : "theme-warm");
+      localStorage.setItem(STORAGE_KEY, next ? "dark" : "warm");
       return next;
     });
   }, []);

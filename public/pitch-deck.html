@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ارائه محصول — سیستم جذب نماینده بیمه</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #1b3a4b; --cta: #2a6b8a; --accent: #c48a2b;
+      --bg: #f7f5f0; --surface: #efebe4; --text: #1e1b16; --muted: #736b64;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Vazirmatn', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* Slide system */
+    .slide {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 40px 24px; position: relative;
+    }
+    .slide-inner { max-width: 900px; width: 100%; text-align: center; }
+    .slide-number {
+      position: absolute; top: 24px; left: 24px;
+      background: rgba(27, 58, 75, 0.1); color: var(--brand);
+      padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+
+    /* Typography */
+    h1 { font-size: clamp(2.2rem, 6vw, 3.5rem); font-weight: 900; line-height: 1.2; }
+    h2 { font-size: clamp(1.6rem, 4vw, 2.5rem); font-weight: 700; line-height: 1.3; }
+    h3 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 700; }
+    p { font-size: 1.1rem; line-height: 1.8; }
+    .subtitle { color: var(--muted); font-size: 1.2rem; margin-top: 12px; }
+    .small { font-size: 0.9rem; color: var(--muted); }
+
+    /* Colors */
+    .text-brand { color: var(--brand); }
+    .text-cta { color: var(--cta); }
+    .text-accent { color: var(--accent); }
+    .text-success { color: #16a34a; }
+    .text-danger { color: #dc2626; }
+    .bg-brand { background: var(--brand); color: white; }
+    .bg-cta { background: var(--cta); color: white; }
+    .bg-accent { background: var(--accent); color: white; }
+    .bg-dark { background: var(--brand); }
+
+    /* Components */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(42, 107, 138, 0.1); color: var(--cta);
+      padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 32px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 32px; }
+    .card {
+      background: white; border-radius: 16px; padding: 28px;
+      border: 1px solid #ddd7ce; text-align: right;
+    }
+    .card-dark {
+      background: rgba(255,255,255,0.08); border-radius: 16px; padding: 28px;
+      border: 1px solid rgba(255,255,255,0.15); text-align: right;
+    }
+    .stat-box { text-align: center; padding: 20px; }
+    .stat-value { font-size: 2.5rem; font-weight: 900; line-height: 1; }
+    .stat-label { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+    .stat-label-light { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 8px; }
+
+    .divider {
+      border: none; height: 1px; background: #ddd7ce;
+      margin: 32px auto; max-width: 200px;
+    }
+    .divider-light {
+      border: none; height: 1px; background: rgba(255,255,255,0.2);
+      margin: 32px auto; max-width: 200px;
+    }
+
+    .bullet-list { list-style: none; text-align: right; margin-top: 20px; }
+    .bullet-list li {
+      padding: 10px 0; font-size: 1rem; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .bullet-list li::before { content: "✓"; color: var(--cta); font-weight: 700; width: 20px; text-align: center; flex-shrink: 0; }
+    .bullet-list li:last-child { border-bottom: none; }
+
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border-radius: 12px; font-family: inherit;
+      font-size: 1.1rem; font-weight: 700; text-decoration: none;
+      background: var(--accent); color: white; margin-top: 24px;
+      box-shadow: 0 4px 14px rgba(196, 138, 43, 0.4);
+      transition: all 0.2s;
+    }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(196, 138, 43, 0.5); }
+
+    /* Nav dots */
+    .nav-dots {
+      position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 8px; z-index: 100;
+    }
+    .nav-dot {
+      width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--brand);
+      background: transparent; cursor: pointer; transition: all 0.3s;
+    }
+    .nav-dot.active { background: var(--cta); border-color: var(--cta); transform: scale(1.3); }
+    @media (max-width: 768px) { .nav-dots { display: none; } }
+
+    .timeline { position: relative; margin-top: 32px; text-align: right; }
+    .timeline::before {
+      content: ''; position: absolute; right: 20px; top: 0; bottom: 0;
+      width: 2px; background: var(--cta);
+    }
+    .timeline-item {
+      position: relative; padding-right: 50px; padding-bottom: 24px;
+    }
+    .timeline-dot {
+      position: absolute; right: 12px; top: 4px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: white; border: 3px solid var(--cta);
+    }
+    .timeline-item:last-child { padding-bottom: 0; }
+  </style>
+</head>
+<body>
+
+<!-- Nav dots -->
+<nav class="nav-dots" id="navDots"></nav>
+
+<!-- ═══ SLIDE 1: Cover ═══ -->
+<div class="slide bg-dark" id="s1">
+  <span class="slide-number" style="background:rgba(255,255,255,0.15);color:white;">۱ / ۱۰</span>
+  <div class="slide-inner">
+    <div style="margin-bottom:24px;">
+      <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+    <h1 style="color:white; margin-bottom:16px;">سیستم جذب نماینده بیمه</h1>
+    <p style="color:rgba(255,255,255,0.7); font-size:1.3rem; max-width:600px; margin:0 auto 32px;">
+      ابزار حرفه‌ای مدیران فروش برای جذب، ارزیابی و مدیریت نمایندگان
+    </p>
+    <hr class="divider-light" style="max-width:100px; margin:0 auto 24px;">
+    <p style="color:rgba(255,255,255,0.5); font-size:0.9rem;">
+      ارائه محصول · مرداد ۱۴۰۵
+    </p>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 2: Problem ═══ -->
+<div class="slide" id="s2">
+  <span class="slide-number">۲ / ۱۰</span>
+  <div class="slide-inner">
+    <div class="badge">چالش</div>
+    <h2 class="text-danger">مدیران فروش بیمه با چه مشکلاتی روبرو هستند؟</h2>
+    <div class="grid-3">
+      <div class="card" style="border-top:3px solid #dc2626;">
+        <div style="font-size:2rem; margin-bottom:12px;">⏱️</div>
+        <h3 style="color:#dc2626; margin-bottom:8px;">زمان‌بر بودن</h3>
+        <p class="small">بررسی دستی رزومه‌ها و هماهنگی مصاحبه ماه‌ها وقت مدیر را هدر می‌دهد</p>
+      </div>
+      <div class="card" style="border-top:3px solid #dc2626;">
+        <div style="font-size:2rem; margin-bottom:12px;">🎯</div>
+        <h3 style="color:#dc2626; margin-bottom:8px;">انتخاب نادرست</h3>
+        <p class="small">بدون معیار مشخص، انتخاب نماینده مناسب تقریباً شانسی است</p>
+      </div>
+      <div class="card" style="border-top:3px solid #dc2626;">
+        <div style="font-size:2rem; margin-bottom:12px;">📊</div>
+        <h3 style="color:#dc2626; margin-bottom:8px;">عدم تمرکز</h3>
+        <p class="small">اطلاعات متقاضیان در چند جا پراکنده و پیگیری دشوار است</p>
+      </div>
+    </div>
+    <p style="margin-top:32px; color:var(--muted); font-size:1rem;">
+      «هر ماه ۲۰+ ساعت صرف بررسی رزومه و هماهنگی مصاحبه می‌کنم» — مدیر فروش بیمه
+    </p>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 3: Solution ═══ -->
+<div class="slide" id="s3">
+  <span class="slide-number">۳ / ۱۰</span>
+  <div class="slide-inner">
+    <div class="badge">راه‌حل</div>
+    <h2 class="text-brand">یک سیستم جامع برای تمام نیازها</h2>
+    <p class="subtitle">از جذب متقاضی تا استخدام نماینده — همه چیز در یک پلتفرم</p>
+    <div class="grid-2">
+      <div class="card">
+        <div style="font-size:2rem; margin-bottom:8px;">🌐</div>
+        <h3>سایت اختصاصی شما</h3>
+        <p class="small" style="margin-top:8px;">پروفایل حرفه‌ای، دیوار موفقیت، مسیر رشد — آماده اشتراک‌گذاری</p>
+      </div>
+      <div class="card">
+        <div style="font-size:2rem; margin-bottom:8px;">📝</div>
+        <h3>فرم هوشمند درخواست</h3>
+        <p class="small" style="margin-top:8px;">اعتبارسنجی خودکار + ارزیابی تناسب شغلی + امتیازدهی</p>
+      </div>
+      <div class="card">
+        <div style="font-size:2rem; margin-bottom:8px;">📋</div>
+        <h3>پنل مدیریت جامع</h3>
+        <p class="small" style="margin-top:8px;">فیلتر، جستجو، مدیریت وضعیت، تعیین وقت — همه در یک نگاه</p>
+      </div>
+      <div class="card">
+        <div style="font-size:2rem; margin-bottom:8px;">🔗</div>
+        <h3>سیستم ارجاع</h3>
+        <p class="small" style="margin-top:8px;">هر نماینده لینک اختصاصی خود را دارد — ردیابی خودکار معرفی‌ها</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 4: Demo Walkthrough ═══ -->
+<div class="slide" id="s4">
+  <span class="slide-number">۴ / ۱۰</span>
+  <div class="slide-inner">
+    <div class="badge">دموی زنده</div>
+    <h2>صفحه اصلی سایت شما</h2>
+    <p class="subtitle">این صفحه‌ای است که متقاضیان شما می‌بینند</p>
+    <div class="card" style="margin-top:32px; padding:0; overflow:hidden;">
+      <div style="background:#f5f5f5; padding:8px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e5e5e5;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#ffbd2e;"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#28c840;"></div>
+        <div style="flex:1;background:white;border-radius:4px;padding:4px 10px;font-size:0.7rem;color:#999;text-align:center;">yourname.com</div>
+      </div>
+      <div style="padding:24px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#2a6b8a,#c48a2b);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;">ح</div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;">دکتر امیر حسینی</div>
+            <div style="font-size:0.8rem;color:#736b64;">مدیر فروش ارشد منطقه مرکز</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+          <div style="background:#efebe4;border-radius:10px;padding:12px;text-align:center;"><div style="font-weight:700;color:#2a6b8a;">۶۳</div><div style="font-size:0.7rem;color:#736b64;">نماینده</div></div>
+          <div style="background:#efebe4;border-radius:10px;padding:12px;text-align:center;"><div style="font-weight:700;color:#16a34a;">+۷۵٪</div><div style="font-size:0.7rem;color:#736b64;">رشد نماینده</div></div>
+          <div style="background:#efebe4;border-radius:10px;padding:12px;text-align:center;"><div style="font-weight:700;color:#16a34a;">+۱۱۰٪</div><div style="font-size:0.7rem;color:#736b64;">رشد بیمه‌نامه</div></div>
+        </div>
+        <div style="text-align:center;"><a href="/" target="_blank" style="color:#2a6b8a;font-size:0.8rem;font-weight:600;">مشاهده سایت زنده →</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 5: Admin Panel ═══ -->
+<div class="slide" id="s5">
+  <span class="slide-number">۵ / ۱۰</span>
+  <div class="slide-inner">
+    <div class="badge">پنل مدیریت</div>
+    <h2>مدیریت هوشمند متقاضیان</h2>
+    <p class="subtitle">تمام متقاضیان در یک نگاه — فیلتر، جستجو، مدیریت وضعیت</p>
+    <div class="grid-2" style="text-align:right;">
+      <div>
+        <ul class="bullet-list">
+          <li>آمار کلی: تعداد متقاضیان، قرارهای امروز، نمایندگان فعال</li>
+          <li>فیلتر پیشرفته: بر اساس امتیاز، شهر، وضعیت، تاریخ</li>
+          <li>تغییر سریع وضعیت: با یک کلیک</li>
+          <li>تعیین وقت: تقویم شمسی یکپارچه</li>
+          <li>مشاهده جزئیات: سابقه فروش، انگیزه، شبکه ارتباطی</li>
+        </ul>
+        <a href="/admin" target="_blank" class="cta-btn" style="font-size:0.9rem; padding:10px 24px; margin-top:16px;">
+          مشاهده پنل مدیریت ←
+        </a>
+      </div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="background:#f5f5f5;padding:6px 12px;display:flex;gap:4px;border-bottom:1px solid #e5e5e5;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#ff5f57;"></div>
+          <div style="width:6px;height:6px;border-radius:50%;background:#ffbd2e;"></div>
+          <div style="width:6px;height:6px;border-radius:50%;background:#28c840;"></div>
+        </div>
+        <div style="padding:16px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+            <div style="background:#eff6ff;border-radius:8px;padding:8px;text-align:center;"><div style="font-weight:700;color:#2563eb;font-size:1.1rem;">۱۸</div><div style="font-size:0.65rem;color:#736b64;">متقاضی</div></div>
+            <div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center;"><div style="font-weight:700;color:#16a34a;font-size:1.1rem;">۳</div><div style="font-size:0.65rem;color:#736b64;">قرار امروز</div></div>
+            <div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center;"><div style="font-weight:700;color:#16a34a;font-size:1.1rem;">۶۳</div><div style="font-size:0.65rem;color:#736b64;">نماینده</div></div>
+          </div>
+          <div style="font-size:0.7rem;color:#736b64;margin-bottom:6px;">آخرین متقاضیان:</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px;background:#f7f5f0;border-radius:6px;margin-bottom:4px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#16a34a;font-weight:700;">۹۵</div>
+            <div style="flex:1;font-size:0.7rem;font-weight:600;">پیمان سوری</div>
+            <div style="font-size:0.6rem;padding:2px 6px;background:#f3e8ff;border-radius:4px;color:#7c3aed;">مصاحبه</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px;background:#f7f5f0;border-radius:6px;margin-bottom:4px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#16a34a;font-weight:700;">۹۲</div>
+            <div style="flex:1;font-size:0.7rem;font-weight:600;">امیر سلطانی</div>
+            <div style="font-size:0.6rem;padding:2px 6px;background:#f0fdf4;border-radius:4px;color:#16a34a;"> استخدام</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px;background:#f7f5f0;border-radius:6px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#d97706;font-weight:700;">۷۸</div>
+            <div style="flex:1;font-size:0.7rem;font-weight:600;">زهرا کاظمی</div>
+            <div style="font-size:0.6rem;padding:2px 6px;background:#eff6ff;border-radius:4px;color:#2563eb;">جدید</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 6: Scoring System ═══ -->
+<div class="slide" id="s6">
+  <span class="slide-number">۶ / ۱۰</span>
+  <div class="slide-inner">
+    <div class="badge">امتیازدهی هوشمند</div>
+    <h2>بهترین‌ها را سریع شناسایی کنید</h2>
+    <p class="subtitle">سیستم هوشمند رتبه‌بندی بر اساس ۴ معیار کلیدی</p>
+    <div class="grid-4">
+      <div class="card stat-box">
+        <div style="font-size:2rem; margin-bottom:8px;">💼</div>
+        <h3 style="font-size:0.9rem;">سابقه فروش</h3>
+        <p class="small">تجربه قبلی در فروش و بازاریابی</p>
+      </div>
+      <div class="card stat-box">
+        <div style="font-size:2rem; margin-bottom:8px;">👥</div>
+        <h3 style="font-size:0.9rem;">شبکه ارتباطی</h3>
+        <p class="small">تعداد مخاطبان قابل دسترس</p>
+      </div>
+      <div class="card stat-box">
+        <div style="font-size:2rem; margin-bottom:8px;">⏰</div>
+        <h3 style="font-size:0.9rem;">در دسترس بودن</h3>
+        <p class="small">زمان قابل اختصاص به کار</p>
+      </div>
+      <div class="card stat-box">
+        <div style="font-size:2rem; margin-bottom:8px;">🔥</div>
+        <h3 style="font-size:0.9rem;">انگیزه</h3>
+        <p class="small">دلایل همکاری و اهداف</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:24px; text-align:center;">
+      <p style="font-size:0.9rem; color:var(--muted);">
+        نتیجه: <strong style="color:var(--cta);">۸۵٪ دقت</strong> در شناسایی نمایندگان مناسب
+        — بدون نیاز به بررسی دستی رزومه‌ها
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 7: Results ═══ -->
+<div class="slide bg-dark" id="s7">
+  <span class="slide-number" style="background:rgba(255,255,255,0.15);color:white;">۷ / ۱۰</span>
+  <div class="slide-inner">
+    <h2 style="color:white;">نتایج واقعی استفاده‌کنندگان</h2>
+    <p style="color:rgba(255,255,255,0.6);">آماری که گویای همه چیز است</p>
+    <div class="grid-4">
+      <div class="card-dark stat-box">
+        <div class="stat-value text-accent">+۳۲۰٪</div>
+        <div class="stat-label-light">رشد متوسط تیم فروش</div>
+      </div>
+      <div class="card-dark stat-box">
+        <div class="stat-value text-accent">۷۰٪</div>
+        <div class="stat-label-light">کاهش زمان جذب</div>
+      </div>
+      <div class="card-dark stat-box">
+        <div class="stat-value text-accent">۸۵٪</div>
+        <div class="stat-label-light">دقت انتخاب نماینده</div>
+      </div>
+      <div class="card-dark stat-box">
+        <div class="stat-value text-accent">۳x</div>
+        <div class="stat-label-light">افزایش درآمد</div>
+      </div>
+    </div>
+    <div class="card-dark" style="margin-top:32px; max-width:600px; margin-left:auto; margin-right:auto;">
+      <p style="color:rgba(255,255,255,0.8); font-style:italic; font-size:0.95rem;">
+        «قبلاً ماه‌ها طول می‌کشید تا یک نماینده خوب پیدا کنم. الان با این سیستم، بهترین‌ها خودشان درخواست می‌دهند.»
+      </p>
+      <p style="color:var(--accent); font-size:0.85rem; margin-top:12px; font-weight:600;">— دکتر امیر حسینی، مدیر فروش ارشد</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 8: How It Works ═══ -->
+<div class="slide" id="s8">
+  <span class="slide-number">۸ / ۱۰</span>
+  <div class="slide-inner">
+    <h2>چطور شروع کنیم؟</h2>
+    <p class="subtitle">از ثبت‌نام تا اولین نماینده، فقط ۳ مرحله</p>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div class="bg-cta" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;">۱</div>
+            <h3>سایت خود را بسازید</h3>
+          </div>
+          <p class="small">پروفایل خود را تکمیل کنید. اطلاعات، عکس و دستاوردهایتان را وارد کنید. لینک اختصاصی خود را دریافت کنید.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div class="bg-cta" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;">۲</div>
+            <h3>لینک را به اشتراک بگذارید</h3>
+          </div>
+          <p class="small">لینک اختصاصی خود را در اینستاگرام، واتساپ و تلگرام به اشتراک بگذارید. متقاضیان خودشان درخواست می‌دهند.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div class="bg-cta" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;">۳</div>
+            <h3>بهترین‌ها را استخدام کنید</h3>
+          </div>
+          <p class="small">در پنل مدیریت، متقاضیان را بر اساس امتیاز ببینید. وضعیت را تغییر دهید و وقت ملاقات تعیین کنید.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 9: Pricing ═══ -->
+<div class="slide" id="s9">
+  <span class="slide-number">۹ / ۱۰</span>
+  <div class="slide-inner">
+    <h2>سرمایه‌گذاری در موفقیت</h2>
+    <p class="subtitle">یک هزینه ناچیز در مقابل درآمد نامحدود</p>
+    <div class="grid-2" style="max-width:700px; margin:32px auto 0;">
+      <div class="card" style="text-align:center;">
+        <h3>پایه</h3>
+        <div style="font-size:1.8rem; font-weight:900; color:var(--cta); margin:12px 0;">۲.۹ <span style="font-size:0.8rem;font-weight:400;color:var(--muted);">میلیون/ماه</span></div>
+        <ul class="bullet-list" style="font-size:0.85rem;">
+          <li>سایت اختصاصی</li>
+          <li>فرم درخواست هوشمند</li>
+          <li>پنل مدیریت</li>
+          <li>سیستم امتیازدهی</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:center; border:2px solid var(--cta); position:relative; transform:scale(1.02);">
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--cta);color:white;padding:3px 14px;border-radius:12px;font-size:0.7rem;font-weight:600;">محبوب‌ترین</div>
+        <h3>حرفه‌ای</h3>
+        <div style="font-size:1.8rem; font-weight:900; color:var(--cta); margin:12px 0;">۴.۹ <span style="font-size:0.8rem;font-weight:400;color:var(--muted);">میلیون/ماه</span></div>
+        <ul class="bullet-list" style="font-size:0.85rem;">
+          <li>تمام امکانات پایه</li>
+          <li>سیستم ارجاع</li>
+          <li>تقویم شمسی</li>
+          <li>اتصال تلگرام</li>
+          <li>پشتیبانی ۲۴/۷</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 10: CTA ═══ -->
+<div class="slide bg-dark" id="s10">
+  <span class="slide-number" style="background:rgba(255,255,255,0.15);color:white;">۱۰ / ۱۰</span>
+  <div class="slide-inner">
+    <h2 style="color:white; margin-bottom:16px;">آماده‌اید تیم فروش خود را متحول کنید؟</h2>
+    <p style="color:rgba(255,255,255,0.7); font-size:1.2rem; margin-bottom:32px;">
+      همین الان دموی رایگان را درخواست کنید
+    </p>
+    <a href="tel:+989121234567" class="cta-btn">
+      📞 درخواست دموی رایگان
+    </a>
+    <div style="margin-top:32px; display:flex; justify-content:center; gap:24px; flex-wrap:wrap;">
+      <div style="color:rgba(255,255,255,0.5); font-size:0.85rem;">✓ بدون تعهد</div>
+      <div style="color:rgba(255,255,255,0.5); font-size:0.85rem;">✓ راه‌اندازی ۲۴ ساعته</div>
+      <div style="color:rgba(255,255,255,0.5); font-size:0.85rem;">✓ پشتیبانی رایگان</div>
+    </div>
+    <hr class="divider-light" style="margin-top:40px;">
+    <p style="color:rgba(255,255,255,0.3); font-size:0.8rem;">
+      سیستم جذب نماینده بیمه · ارائه محصول · ۱۴۰۵
+    </p>
+  </div>
+</div>
+
+<script>
+  // Build nav dots
+  const slides = document.querySelectorAll('.slide');
+  const navDots = document.getElementById('navDots');
+  slides.forEach((s, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot';
+    dot.title = `اسلاید ${i + 1}`;
+    dot.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+    navDots.appendChild(dot);
+  });
+
+  // Update active dot on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const idx = Array.from(slides).indexOf(entry.target);
+        document.querySelectorAll('.nav-dot').forEach((d, i) => {
+          d.classList.toggle('active', i === idx);
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+
+  slides.forEach(s => observer.observe(s));
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const current = Array.from(slides).findIndex(s => {
+      const rect = s.getBoundingClientRect();
+      return rect.top <= 100 && rect.bottom > 100;
+    });
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (current < slides.length - 1) slides[current + 1].scrollIntoView({ behavior: 'smooth' });
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (current > 0) slides[current - 1].scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+</script>
+
+</body>
+</html>

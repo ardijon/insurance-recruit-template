@@ -4,7 +4,7 @@
    ".theme-warm" (default) = warm professional light palette
    ".theme-dark"           = dark palette
    The active class is applied server-side by app/layout.tsx. */
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.theme-dark, .theme-dark *));
 
 .theme-warm {
   --color-bg-base: #f7f5f0;
@@ -19,19 +19,6 @@
 }
 
 .theme-dark {
-  --color-bg-base: #0b1420;
-  --color-bg-surface: #111827;
-  --color-text-primary: #f3f4f6;
-  --color-text-secondary: #9ca3af;
-  --color-border: #1f2937;
-  --color-brand-emphasis: #6fa8dc;
-  --color-brand-cta: #3b82c4;
-  --color-accent: #d9a94a;
-  --color-success: #22c55e;
-}
-
-/* Backward-compat alias — admin panel toggle still uses .dark */
-.dark {
   --color-bg-base: #0b1420;
   --color-bg-surface: #111827;
   --color-text-primary: #f3f4f6;

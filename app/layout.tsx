@@ -42,7 +42,7 @@ export default async function RootLayout({
   const themeClass = (await getSiteTheme()) === "dark" ? "theme-dark" : "theme-warm";
 
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${themeClass}`} suppressHydrationWarning>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${themeClass}`}>
       <body>{children}</body>
     </html>
   );

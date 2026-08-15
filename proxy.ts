@@ -1,15 +1,24 @@
 // Protects admin routes — only the manager (who knows ADMIN_PASSWORD) may
 // access /api/admin/* and /admin/*. Public routes (/api/applications,
 // /api/referrals) remain open.
+// In DEMO_MODE, auth is bypassed and write operations return mock responses.
+//
+// NOTE: proxy runs on Node.js runtime by default (Next.js 16+).
+// Session verification uses lib/session-edge.ts with Web Crypto API
+// which works in both Edge and Node.js runtimes.
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionValue } from "@/lib/auth";
+import { SESSION_COOKIE, verifySessionValue } from "@/lib/session-edge";
 
 const CSRF_COOKIE = "csrf_token";
 const CSRF_HEADER = "x-csrf-token";
 
 const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function isDemoMode(): boolean {
+  return process.env.DEMO_MODE === "true";
+}
 
 function generateToken(): string {
   const arr = new Uint8Array(32);
@@ -46,12 +55,21 @@ async function verifyCsrfToken(token: string, sessionToken: string): Promise<boo
     ["verify"],
   );
   const payload = `${csrfToken}:${sessionToken}`;
-  const sigBuf = new Uint8Array(sigHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
+  const sigBuf = new Uint8Array((sigHex.match(/.{2}/g) ?? []).map((h) => parseInt(h, 16)));
   return crypto.subtle.verify("HMAC", key, sigBuf, new TextEncoder().encode(payload));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const demo = isDemoMode();
+
+  // Demo mode must never be active in production — it bypasses all auth.
+  if (demo && process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Demo mode is disabled in production" },
+      { status: 403 },
+    );
+  }
 
   const isAdminApiRoute = pathname.startsWith("/api/admin/");
   const isAdminPage = pathname.startsWith("/admin") && !pathname.startsWith("/api/");
@@ -59,8 +77,53 @@ export async function middleware(request: NextRequest) {
   if (!isAdminApiRoute && !isAdminPage) return NextResponse.next();
 
   const isPublicAdminPage =
-    pathname === "/admin/login" || pathname === "/api/admin/login";
+    pathname === "/admin/login" ||
+    pathname === "/api/admin/login" ||
+    pathname.startsWith("/api/admin/login/");
 
+  // --- DEMO MODE: bypass auth, set session cookie automatically ---
+  if (demo) {
+    // For login endpoint in demo mode, set a session cookie and return success
+    if (isPublicAdminPage && pathname === "/api/admin/login" && request.method === "POST") {
+      const response = NextResponse.json({ success: true });
+      const demoToken = generateToken();
+      response.cookies.set(SESSION_COOKIE, `demo.${demoToken}`, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 60 * 24,
+      });
+      return response;
+    }
+
+    // For admin pages and API, allow access without auth
+    if (isAdminPage) {
+      // Set CSRF cookie for pages
+      const response = NextResponse.next();
+      const csrfToken = generateToken();
+      response.cookies.set(CSRF_COOKIE, csrfToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 60 * 24,
+      });
+      return response;
+    }
+
+    // For state-changing API routes in demo mode, return mock success
+    if (isAdminApiRoute && STATE_CHANGING_METHODS.has(request.method) && !isPublicAdminPage) {
+      return NextResponse.json({
+        success: true,
+        message: "در حالت دمو، تغییرات ذخیره نمیشوند",
+      });
+    }
+
+    return NextResponse.next();
+  }
+
+  // --- NORMAL MODE: full auth + CSRF ---
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!isPublicAdminPage && (!token || !(await verifySessionValue(token)))) {
     if (pathname.startsWith("/api/")) {
@@ -95,12 +158,22 @@ export async function middleware(request: NextRequest) {
     const cookieToken = request.cookies.get(CSRF_COOKIE)?.value;
     const headerToken = request.headers.get(CSRF_HEADER);
     const sessionToken = request.cookies.get(SESSION_COOKIE)?.value;
-    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+    if (!cookieToken || !headerToken || cookieToken.length !== headerToken.length) {
       return NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 });
     }
-    // Verify CSRF is bound to session
-    if (sessionToken && !(await verifyCsrfToken(cookieToken, sessionToken))) {
-      return NextResponse.json({ error: "CSRF token invalid" }, { status: 403 });
+    // Timing-safe comparison to prevent timing attacks
+    let csrfDiff = 0;
+    for (let i = 0; i < cookieToken.length; i++) {
+      csrfDiff |= cookieToken.charCodeAt(i) ^ headerToken.charCodeAt(i);
+    }
+    if (csrfDiff !== 0) {
+      return NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 });
+    }
+    // Verify CSRF is bound to session (only if token has signature, i.e. contains a dot)
+    if (sessionToken && cookieToken.includes(".")) {
+      if (!(await verifyCsrfToken(cookieToken, sessionToken))) {
+        return NextResponse.json({ error: "CSRF token invalid" }, { status: 403 });
+      }
     }
   }
 

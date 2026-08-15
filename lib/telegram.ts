@@ -46,7 +46,7 @@ const TELEGRAM_API = "https://api.telegram.org";
 
 export async function notifyManagerOnTelegram(
   applicant: ApplicantNotification
-): Promise<void> {
+): Promise<boolean> {
   await ensureSchema();
   const { token, chatId } = await getTelegramSettings();
 
@@ -54,7 +54,7 @@ export async function notifyManagerOnTelegram(
     console.warn(
       "[telegram] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — skipping notification"
     );
-    return;
+    return false;
   }
 
   const message = buildMessage(applicant);
@@ -73,7 +73,9 @@ export async function notifyManagerOnTelegram(
 
   if (!res.ok) {
     console.error(`[telegram] failed to send message: ${res.status} (chat_id redacted)`);
+    return false;
   }
+  return true;
 }
 
 export async function testTelegramConnection(
@@ -118,6 +120,33 @@ export async function testTelegramConnection(
   } catch {
     return { success: false, error: "خطا در اتصال به سرور تلگرام" };
   }
+}
+
+export async function sendTelegramText(text: string): Promise<boolean> {
+  await ensureSchema();
+  const { token, chatId } = await getTelegramSettings();
+
+  if (!token || !chatId) {
+    console.warn("[telegram] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — skipping message");
+    return false;
+  }
+
+  const url = `${TELEGRAM_API}/bot${token}/sendMessage`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+    }),
+  });
+
+  if (!res.ok) {
+    console.error(`[telegram] failed to send message: ${res.status} (chat_id redacted)`);
+    return false;
+  }
+  return true;
 }
 
 function buildMessage(applicant: ApplicantNotification): string {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { selectAll, executeUpdate, executeInsert as execInsert, ensureSchema } from "@/lib/db";
 
 export async function GET() {
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       [body.agent_name, body.quote, body.images_json ?? "[]", body.permission_granted ? 1 : 0, body.sort_order ?? 0]
     );
 
+    revalidatePath("/");
     return NextResponse.json(
       { id: Number(result.lastInsertRowid) },
       { status: 201 },
@@ -66,7 +68,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!body.id) {
+  if (body.id === undefined || body.id === null) {
     return NextResponse.json({ error: "id is required" }, { status: 422 });
   }
 
@@ -84,6 +86,7 @@ export async function PATCH(request: NextRequest) {
     }
     params.push(body.id);
     await executeUpdate(`UPDATE success_wall_entries SET ${updates.join(", ")} WHERE id = ?`, params);
+    revalidatePath("/");
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی" }, { status: 500 });
@@ -108,6 +111,7 @@ export async function PUT(request: NextRequest) {
     for (const { id, sort_order } of body.orders) {
       await executeUpdate("UPDATE success_wall_entries SET sort_order = ? WHERE id = ?", [sort_order, id]);
     }
+    revalidatePath("/");
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی ترتیب" }, { status: 500 });
@@ -127,6 +131,7 @@ export async function DELETE(request: NextRequest) {
     if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "entry not found" }, { status: 404 });
     }
+    revalidatePath("/");
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در حذف" }, { status: 500 });

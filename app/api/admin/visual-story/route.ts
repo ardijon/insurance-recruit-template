@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 
 export async function GET() {
@@ -35,5 +36,6 @@ export async function PUT(request: NextRequest) {
     );
   }
 
+  revalidatePath("/");
   return NextResponse.json({ success: true });
 }

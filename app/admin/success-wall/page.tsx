@@ -31,10 +31,10 @@ export default function SuccessWallPage() {
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const fileRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-  let toastId = 0;
+  const toastIdRef = useRef(0);
 
   function addToast(message: string, type: "success" | "error" = "success") {
-    const id = toastId++;
+    const id = toastIdRef.current++;
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
   }
@@ -297,7 +297,7 @@ export default function SuccessWallPage() {
           <button type="button" onClick={() => setLightboxImg(null)} className="absolute top-4 left-4 size-10 flex items-center justify-center rounded-full bg-white/10 text-white text-lg hover:bg-white/20 transition-colors">
             ×
           </button>
-          <img src={lightboxImg} alt="" className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <Image src={lightboxImg} alt="" width={1200} height={800} unoptimized className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
 
