@@ -60,11 +60,12 @@ const DEMO_DATA = {
     { id: 5, question: "آیا نیاز به سرمایه اولیه دارم؟", answer: "خیر، هیچ سرمایه اولیه‌ای نیاز نیست." },
   ],
   visualStoryImages: [
-    "/uploads/073356921103447fedc73c712a72a23a.png",
-    "/uploads/8e4c4baa2c95b706349f80e2d3f717d1.png",
-    "/uploads/cd68e7e5c0cf9761f2533b1f4e03a708.png",
-    "/uploads/beec1f37458afe721fc51361c11ce849.png",
-    "/uploads/dc382733baabe5a630350fb36e34c2d4.png",
+    "/uploads/visual-story/visual-story-1.webp",
+    "/uploads/visual-story/visual-story-2.webp",
+    "/uploads/visual-story/visual-story-3.webp",
+    "/uploads/visual-story/visual-story-4.webp",
+    "/uploads/visual-story/visual-story-5.webp",
+    "/uploads/visual-story/visual-story-6.webp",
   ],
 };
 

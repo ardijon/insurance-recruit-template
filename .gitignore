@@ -55,6 +55,7 @@ yarn-error.log*
 
 # uploaded images — regenerated per deployment
 /public/uploads/**
+!/public/uploads/visual-story/
 
 # typescript
 *.tsbuildinfo

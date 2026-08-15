@@ -42,12 +42,12 @@ const DEMO_FAQ_ITEMS = [
 ];
 
 const DEMO_VISUAL_STORY_IMAGES = [
-  "/uploads/073356921103447fedc73c712a72a23a.png",
-  "/uploads/8e4c4baa2c95b706349f80e2d3f717d1.png",
-  "/uploads/cd68e7e5c0cf9761f2533b1f4e03a708.png",
-  "/uploads/manager_1784865740887.png",
-  "/uploads/manager_1785077723821.png",
-  "/uploads/manager_1785077863714.png",
+  "/uploads/visual-story/visual-story-1.webp",
+  "/uploads/visual-story/visual-story-2.webp",
+  "/uploads/visual-story/visual-story-3.webp",
+  "/uploads/visual-story/visual-story-4.webp",
+  "/uploads/visual-story/visual-story-5.webp",
+  "/uploads/visual-story/visual-story-6.webp",
 ];
 
 const DEMO_APPLICANTS = [
