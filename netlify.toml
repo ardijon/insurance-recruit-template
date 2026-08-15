@@ -1,6 +1,16 @@
 [build]
-  command = "npm install && npx tsx scripts/setup-db.ts && npm run build"
+  command = "npm run build"
   publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  DEMO_MODE = "true"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Redirects for Next.js
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404

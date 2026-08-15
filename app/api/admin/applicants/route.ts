@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { selectOne, selectAll, executeUpdate, ensureSchema } from "@/lib/db";
+import { isDemoMode, getDemoApplicants, updateDemoApplicantStatus, scheduleDemoAppointment, deleteDemoApplicant } from "@/lib/demo";
 
 const VALID_STATUSES = ["new", "contacted", "interviewed", "hired", "rejected"] as const;
 const VALID_SORT = ["created_at", "score", "full_name", "appointment_date"] as const;
@@ -7,6 +8,24 @@ type SortField = (typeof VALID_SORT)[number];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+
+  if (isDemoMode()) {
+    const result = getDemoApplicants({
+      search: searchParams.get("search")?.trim() || undefined,
+      status: searchParams.get("status")?.trim() || undefined,
+      city: searchParams.get("city")?.trim() || undefined,
+      hasAppointment: searchParams.get("has_appointment") || undefined,
+      scoreMin: searchParams.get("score_min") || undefined,
+      scoreMax: searchParams.get("score_max") || undefined,
+      dateFrom: searchParams.get("date_from") || undefined,
+      dateTo: searchParams.get("date_to") || undefined,
+      sortBy: searchParams.get("sort_by") || "created_at",
+      sortOrder: searchParams.get("sort_order") || "desc",
+      page: Number(searchParams.get("page")) || 1,
+      limit: Number(searchParams.get("limit")) || 20,
+    });
+    return NextResponse.json(result);
+  }
 
   try {
     await ensureSchema();
@@ -58,8 +77,8 @@ export async function GET(request: NextRequest) {
   const data = await selectAll(
     `SELECT id, full_name, phone, city, sales_background, network_size,
      availability, motivation, score, referral_code,
-     appointment_date, appointment_time, status, created_at
-     FROM applicants ${where}
+      appointment_date, appointment_jalali, appointment_time, status, created_at
+      FROM applicants ${where}
      ORDER BY ${sortBy} ${sortOrder}
      LIMIT ? OFFSET ?`,
     [...params, limit, offset]
@@ -75,6 +94,7 @@ export async function PATCH(request: NextRequest) {
   let body: {
     id?: number;
     appointment_date?: string | null;
+    appointment_jalali?: string | null;
     appointment_time?: string | null;
     status?: string;
   };
@@ -85,8 +105,18 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!body.id) {
+  if (body.id === undefined || body.id === null) {
     return NextResponse.json({ error: "id is required" }, { status: 422 });
+  }
+
+  if (isDemoMode()) {
+    if (body.status !== undefined) {
+      updateDemoApplicantStatus(body.id, body.status);
+    }
+    if (body.appointment_date !== undefined || body.appointment_time !== undefined) {
+      scheduleDemoAppointment(body.id, body.appointment_date ?? "", body.appointment_jalali ?? null, body.appointment_time ?? null);
+    }
+    return NextResponse.json({ success: true, message: "در حالت دمو، تغییرات ذخیره نمی‌شوند" });
   }
 
   await ensureSchema();
@@ -95,9 +125,10 @@ export async function PATCH(request: NextRequest) {
     await executeUpdate(
       `UPDATE applicants SET
         appointment_date = COALESCE(?, appointment_date),
+        appointment_jalali = COALESCE(?, appointment_jalali),
         appointment_time = COALESCE(?, appointment_time)
        WHERE id = ?`,
-      [body.appointment_date ?? null, body.appointment_time ?? null, body.id]
+      [body.appointment_date ?? null, body.appointment_jalali ?? null, body.appointment_time ?? null, body.id]
     );
   }
 
@@ -116,6 +147,12 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "id is required" }, { status: 422 });
+  }
+
+  if (isDemoMode()) {
+    const result = deleteDemoApplicant(Number(id));
+    if (!result.success) return NextResponse.json({ error: "applicant not found" }, { status: 404 });
+    return NextResponse.json({ success: true, message: "در حالت دمو، تغییرات ذخیره نمی‌شوند" });
   }
 
   try {
