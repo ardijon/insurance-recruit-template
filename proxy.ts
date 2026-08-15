@@ -17,7 +17,22 @@ const CSRF_HEADER = "x-csrf-token";
 const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === "true";
+  // Only allow demo mode in development or when explicitly enabled via build environment
+  // Never allow demo mode to be enabled via client-side environment variables in production
+  const isProduction = process.env.NODE_ENV === "production";
+  const demoMode = process.env.DEMO_MODE === "true";
+
+  // In production, only allow demo mode if it's set at build time (netlify.toml)
+  // and not via runtime environment variables that could be tampered with
+  if (isProduction) {
+    // Check if this is a demo deployment (specific Netlify site)
+    const isDemoSite = !!(process.env.URL?.includes("manager-tavana-demo") ||
+                       process.env.DEPLOY_URL?.includes("manager-tavana-demo"));
+    return demoMode && isDemoSite;
+  }
+
+  // In development, allow demo mode freely
+  return demoMode;
 }
 
 function generateToken(): string {
@@ -107,11 +122,28 @@ export async function proxy(request: NextRequest) {
     }
 
     // For state-changing API routes in demo mode, return mock success
+    // Exception: content management APIs (visual-story, faq, growth-path, etc.) should work in demo
+    // so users can see their changes reflected on the site
     if (isAdminApiRoute && STATE_CHANGING_METHODS.has(request.method) && !isPublicAdminPage) {
-      return NextResponse.json({
-        success: true,
-        message: "در حالت دمو، تغییرات ذخیره نمیشوند",
-      });
+      const contentApiPaths = [
+        "/api/admin/visual-story",
+        "/api/admin/visual-story-images",
+        "/api/admin/faq",
+        "/api/admin/growth-path",
+        "/api/admin/success-wall",
+        "/api/admin/success-wall-images",
+        "/api/admin/profile",
+        "/api/admin/settings",
+        "/api/admin/theme",
+        "/api/admin/social-links",
+      ];
+      const isContentApi = contentApiPaths.some(p => pathname.startsWith(p));
+      if (!isContentApi) {
+        return NextResponse.json({
+          success: true,
+          message: "در حالت دمو، تغییرات ذخیره نمیشوند",
+        });
+      }
     }
 
     return NextResponse.next();

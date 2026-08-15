@@ -93,21 +93,21 @@ export default async function HomePage() {
   let faqRows: Record<string, unknown>[] = [];
   let visualStoryImages: string[] = [];
 
-  if (demo) {
-    // Use hardcoded demo data — no database needed
-    profileRaw = DEMO_DATA.profile;
-    successEntriesRaw = DEMO_DATA.successEntries;
-    growthStagesRaw = DEMO_DATA.growthStages;
-    faqRows = DEMO_DATA.faqItems;
-    visualStoryImages = DEMO_DATA.visualStoryImages;
-  } else {
-    // Production: fetch from database
+  try {
+    // Always try to fetch from database first (works in both demo and production)
     const [profileResult, successResult, growthResult, faqResult, visualResult] = await getCachedData();
     profileRaw = profileResult as Record<string, unknown> | undefined;
     successEntriesRaw = successResult;
     growthStagesRaw = growthResult;
     faqRows = faqResult;
     try { visualStoryImages = JSON.parse((visualResult as { images_json: string } | undefined)?.images_json ?? "[]"); } catch { visualStoryImages = []; }
+  } catch {
+    // Fallback to hardcoded demo data if database is unavailable
+    profileRaw = DEMO_DATA.profile;
+    successEntriesRaw = DEMO_DATA.successEntries;
+    growthStagesRaw = DEMO_DATA.growthStages;
+    faqRows = DEMO_DATA.faqItems;
+    visualStoryImages = DEMO_DATA.visualStoryImages;
   }
 
   const profile = profileRaw as

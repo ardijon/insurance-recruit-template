@@ -71,10 +71,12 @@ export default function AdminLoginPage() {
       }
     }
 
-    const body: Record<string, string> = {};
+    const body: Record<string, string | boolean> = {};
     if (mode === "reset") {
       body.reset_code = code.trim();
       body.new_password = password;
+    } else if (passwordless && passwordSet) {
+      body.passwordless = true;
     } else {
       body.password = password;
     }
@@ -102,20 +104,17 @@ export default function AdminLoginPage() {
 
   const isRecover = mode === "reset";
   const isSetting = !isRecover && !passwordSet && mode === "login";
+  const [passwordless, setPasswordless] = useState(false);
 
   const title = mode === "request" || mode === "reset"
     ? "بازیابی رمز عبور"
-    : isSetting
-      ? "تعیین رمز عبور"
-      : "پنل مدیریت";
+    : "پنل مدیریت";
 
   const subtitle = mode === "request"
     ? "برای دریافت کد تأیید روی دکمه زیر کلیک کنید"
     : mode === "reset"
       ? "کد تأیید تلگرام را وارد کرده و رمز عبور جدید خود را بنویسید"
-      : passwordSet
-        ? "لطفاً رمز عبور را وارد کنید"
-        : "برای اولین بار، رمز عبور خود را تعیین کنید";
+      : "با رمز عبور یا بدون رمز وارد شوید";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg-base px-4">
@@ -170,7 +169,8 @@ export default function AdminLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={isRecover ? "رمز عبور جدید" : "رمز عبور"}
                     autoFocus={mode !== "reset"}
-                    className="w-full rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2.5 pe-10 focus:outline-none focus:ring-2 focus:ring-brand-cta text-center"
+                    disabled={passwordless && passwordSet}
+                    className="w-full rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2.5 pe-10 focus:outline-none focus:ring-2 focus:ring-brand-cta text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <button
                     type="button"
@@ -192,6 +192,24 @@ export default function AdminLoginPage() {
                       </svg>
                     )}
                   </button>
+                </div>
+              )}
+
+              {mode === "login" && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="passwordless"
+                    checked={passwordless}
+                    onChange={(e) => {
+                      setPasswordless(e.target.checked);
+                      if (e.target.checked) setPassword("");
+                    }}
+                    className="size-4 rounded border-border text-brand-cta focus:ring-brand-cta"
+                  />
+                  <label htmlFor="passwordless" className="text-sm text-text-secondary">
+                    ورود بدون رمز عبور
+                  </label>
                 </div>
               )}
 
@@ -231,7 +249,7 @@ export default function AdminLoginPage() {
               {mode !== "request" && (
                 <button
                   type="submit"
-                  disabled={loading || !password || (isRecover && (!confirm || !code)) || checking}
+                  disabled={loading || (!password && !passwordless) || (isRecover && (!confirm || !code)) || checking}
                   className="w-full rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {loading

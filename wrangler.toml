@@ -1,0 +1,9 @@
+name = "manager-tavana-demo"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+DEMO_MODE = "true"
+
+[build]
+command = "npx @opennextjs/cloudflare build"

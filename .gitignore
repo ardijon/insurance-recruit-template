@@ -74,3 +74,11 @@ Insurance
 
 # Local Netlify folder
 .netlify
+
+# Cloudflare
+.wrangler/
+.dev.vars
+
+# Cloudflare
+.wrangler/
+.dev.vars
