@@ -63,13 +63,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const demo = isDemoMode();
 
-  // Demo mode must never be active in production — it bypasses all auth.
-  if (demo && process.env.NODE_ENV === "production") {
-    return NextResponse.json(
-      { error: "Demo mode is disabled in production" },
-      { status: 403 },
-    );
-  }
+  // Demo mode allowed in production for demo deployments.
 
   const isAdminApiRoute = pathname.startsWith("/api/admin/");
   const isAdminPage = pathname.startsWith("/admin") && !pathname.startsWith("/api/");
