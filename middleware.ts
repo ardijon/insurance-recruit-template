@@ -59,7 +59,7 @@ async function verifyCsrfToken(token: string, sessionToken: string): Promise<boo
   return crypto.subtle.verify("HMAC", key, sigBuf, new TextEncoder().encode(payload));
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const demo = isDemoMode();
 
