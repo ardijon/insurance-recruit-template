@@ -59,7 +59,13 @@ const DEMO_DATA = {
     { id: 4, question: "درآمد ماهیانه یک نماینده چقدر است؟", answer: "بسته به سطح فروش، درآمد ماهیانه از ۲۰ میلیون تومان شروع می‌شود و بدون سقف ادامه دارد." },
     { id: 5, question: "آیا نیاز به سرمایه اولیه دارم؟", answer: "خیر، هیچ سرمایه اولیه‌ای نیاز نیست." },
   ],
-  visualStoryImages: [] as string[],
+  visualStoryImages: [
+    "/uploads/073356921103447fedc73c712a72a23a.png",
+    "/uploads/8e4c4baa2c95b706349f80e2d3f717d1.png",
+    "/uploads/cd68e7e5c0cf9761f2533b1f4e03a708.png",
+    "/uploads/beec1f37458afe721fc51361c11ce849.png",
+    "/uploads/dc382733baabe5a630350fb36e34c2d4.png",
+  ],
 };
 
 const getCachedData = unstable_cache(
