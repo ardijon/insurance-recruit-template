@@ -400,6 +400,25 @@ export function DemoPageClient({ profile, successEntries, visualStoryImages, gro
           </section>
         )}
       </main>
+
+      {/* Sticky CTA - Buy Button */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-bg-base via-bg-base/95 to-transparent pointer-events-none">
+        <div className="max-w-6xl mx-auto pointer-events-auto">
+          <a
+            href="https://ai2apps.sbs/store/tavana"
+            className="flex items-center justify-center gap-3 w-full bg-brand-cta hover:opacity-90 text-white font-bold text-sm sm:text-base py-4 px-6 rounded-2xl shadow-lg shadow-brand-cta/25 transition-all hover:shadow-xl hover:shadow-brand-cta/30 active:scale-[0.98]"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 01-8 0" />
+            </svg>
+            <span>همین قالب رو برای خودت بساز</span>
+            <span className="hidden sm:inline text-white/70">|</span>
+            <span className="hidden sm:inline text-white/90">۱۴,۹۰۰,۰۰۰ تومان</span>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
