@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import LocalFont from "next/font/local";
 import "./globals.css";
-import { selectOne, ensureSchema } from "@/lib/db";
 
 const vazirmatn = LocalFont({
   src: [
@@ -19,19 +18,8 @@ export const metadata: Metadata = {
   description: "ابزاری برای جذب نماینده‌های باکیفیت‌تر",
 };
 
-let cachedTheme: { value: string; ts: number } | null = null;
-const CACHE_TTL = 10_000;
-
-async function getSiteTheme(): Promise<string> {
-  const now = Date.now();
-  if (cachedTheme && now - cachedTheme.ts < CACHE_TTL) return cachedTheme.value;
-  await ensureSchema();
-  const row = await selectOne(
-    "SELECT site_theme FROM manager_profile WHERE id = 1"
-  ) as { site_theme: string } | undefined;
-  const theme = row?.site_theme ?? "warm";
-  cachedTheme = { value: theme, ts: now };
-  return theme;
+function isDemoMode(): boolean {
+  return process.env.DEMO_MODE === "true";
 }
 
 export default async function RootLayout({
@@ -39,7 +27,20 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const themeClass = (await getSiteTheme()) === "dark" ? "theme-dark" : "theme-warm";
+  let themeClass = "theme-warm";
+
+  if (!isDemoMode()) {
+    try {
+      const { selectOne, ensureSchema } = await import("@/lib/db");
+      await ensureSchema();
+      const row = await selectOne(
+        "SELECT site_theme FROM manager_profile WHERE id = 1"
+      ) as { site_theme: string } | undefined;
+      if (row?.site_theme === "dark") themeClass = "theme-dark";
+    } catch {
+      // Use default theme if DB not available
+    }
+  }
 
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${themeClass}`}>

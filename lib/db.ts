@@ -84,10 +84,6 @@ async function getLocalDb(): Promise<LocalDatabase> {
 // Unified async API
 // ---------------------------------------------------------------------------
 
-function isBuildPhase(): boolean {
-  return typeof window === "undefined" && process.env.NEXT_PHASE === "phase-production-build";
-}
-
 export type DbRow = Record<string, unknown>;
 
 export interface QueryResult {
@@ -100,19 +96,10 @@ function isTurso(): boolean {
   return !!process.env.TURSO_DATABASE_URL;
 }
 
-function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === "true";
-}
-
 export async function execute(
   sql: string,
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
-  // In demo mode during build, return empty results
-  if (isDemoMode() && isBuildPhase()) {
-    return { rows: [], rowsAffected: 0, lastInsertRowid: 0 };
-  }
-
   if (isTurso()) {
     const client = getTursoClient();
     const result = await client.execute({
@@ -225,14 +212,6 @@ let schemaReady = false;
 
 export async function ensureSchema(): Promise<void> {
   if (schemaReady) return;
-
-  // In demo mode during build phase, skip all DB operations to avoid
-  // "database is locked" errors from multiple workers accessing SQLite.
-  if (isDemoMode() && isBuildPhase()) {
-    schemaReady = true;
-    return;
-  }
-
   schemaReady = true;
 
   if (isTurso()) {
