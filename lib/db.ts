@@ -107,7 +107,7 @@ export async function execute(
       args: args ?? [],
     });
     return {
-      rows: result.rows.map((r) => r as unknown as DbRow),
+      rows: result.rows.map((r: any) => r as unknown as DbRow),
       rowsAffected: Number(result.rowsAffected),
       lastInsertRowid: Number(result.lastInsertRowid),
     };
@@ -143,7 +143,7 @@ export async function executeInsert(
       args: args ?? [],
     });
     return {
-      rows: result.rows.map((r) => r as unknown as DbRow),
+      rows: result.rows.map((r: any) => r as unknown as DbRow),
       rowsAffected: Number(result.rowsAffected),
       lastInsertRowid: Number(result.lastInsertRowid),
     };
@@ -171,7 +171,7 @@ export async function executeUpdate(
       args: args ?? [],
     });
     return {
-      rows: result.rows.map((r) => r as unknown as DbRow),
+      rows: result.rows.map((r: any) => r as unknown as DbRow),
       rowsAffected: Number(result.rowsAffected),
       lastInsertRowid: Number(result.lastInsertRowid),
     };
@@ -330,7 +330,7 @@ async function migrateDbTurso(client: Client): Promise<void> {
       sql: `PRAGMA table_info(${table})`,
       args: [],
     });
-    const colNames = result.rows.map((r) => r.name);
+    const colNames = result.rows.map((r: any) => r.name);
     if (!colNames.includes(col)) {
       await client.execute({
         sql: `ALTER TABLE ${table} ADD COLUMN ${col} ${typedef}`,
