@@ -10,21 +10,17 @@
 import mockData from "./mockApplicants.json";
 
 export function isDemoMode(): boolean {
-  // Only allow demo mode in development or when explicitly enabled via build environment
-  // Never allow demo mode to be enabled via client-side environment variables in production
   const isProduction = process.env.NODE_ENV === "production";
   const demoMode = process.env.DEMO_MODE === "true";
 
-  // In production, only allow demo mode if it's set at build time (netlify.toml)
-  // and not via runtime environment variables that could be tampered with
   if (isProduction) {
-    // Check if this is a demo deployment (specific Netlify site)
-    const isDemoSite = !!(process.env.URL?.includes("manager-tavana-demo") ||
-                       process.env.DEPLOY_URL?.includes("manager-tavana-demo"));
+    // Check if this is a demo deployment (Cloudflare Workers)
+    const isDemoSite = !!(
+      process.env.DEMO_MODE === "true"                             // Cloudflare Workers (wrangler.toml [vars])
+    );
     return demoMode && isDemoSite;
   }
 
-  // In development, allow demo mode freely
   return demoMode;
 }
 

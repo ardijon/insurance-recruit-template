@@ -1,7 +1,8 @@
-name = "manager-tavana-demo"
+name = "insurance-recruit-template"
 main = ".open-next/worker.js"
 compatibility_date = "2025-08-16"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [assets]
 directory = ".open-next/assets"

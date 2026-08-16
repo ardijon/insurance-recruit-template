@@ -10,7 +10,7 @@
     "seed": "npx tsx scripts/run-seed.ts",
     "cf:build": "npx @opennextjs/cloudflare build",
     "cf:dev": "npx wrangler dev",
-    "cf:deploy": "npx wrangler pages deploy .vercel/output/static --project-name=manager-tavana-demo"
+    "cf:deploy": "npx wrangler deploy"
   },
   "dependencies": {
     "next": "16.2.11",
