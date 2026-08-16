@@ -13,13 +13,14 @@
     "cf:deploy": "npx wrangler pages deploy .vercel/output/static --project-name=manager-tavana-demo"
   },
   "dependencies": {
-    "@libsql/client": "^0.17.4",
-    "@netlify/plugin-nextjs": "^5.15.13",
-    "bcryptjs": "^3.0.3",
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
+  },
+  "optionalDependencies": {
+    "@libsql/client": "^0.17.4",
+    "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.2",
@@ -32,11 +33,7 @@
     "eslint-config-next": "16.2.11",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
-    "typescript": "^5"
-  },
-  "allowScripts": {
-    "sharp@0.34.5": true,
-    "esbuild@0.28.1": true,
-    "unrs-resolver@1.12.2": true
+    "typescript": "^5",
+    "wrangler": "^4.123.0"
   }
 }

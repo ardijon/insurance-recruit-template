@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { selectOne } from "@/lib/db";
 
 export const SESSION_COOKIE = "admin_session";
@@ -109,10 +108,12 @@ export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
 }
 
 export async function hashPassword(password: string): Promise<string> {
+  const bcrypt = (await import("bcryptjs")).default;
   return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
 export async function verifyPassword(input: string): Promise<boolean> {
+  const bcrypt = (await import("bcryptjs")).default;
   const envPassword = process.env.ADMIN_PASSWORD;
   const row = await selectOne(
     "SELECT value FROM settings WHERE key = 'admin_password_hash'"

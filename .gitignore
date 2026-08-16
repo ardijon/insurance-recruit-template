@@ -78,7 +78,4 @@ Insurance
 # Cloudflare
 .wrangler/
 .dev.vars
-
-# Cloudflare
-.wrangler/
-.dev.vars
+.open-next/

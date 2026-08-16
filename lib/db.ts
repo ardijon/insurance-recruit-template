@@ -6,19 +6,19 @@
 //
 // edge.md §2: each deployment has its own independent database.
 
-import { createClient, type Client } from "@libsql/client";
-
 // ---------------------------------------------------------------------------
-// Turso client (cloud mode)
+// Turso client (cloud mode) — dynamic import to avoid native binary install
 // ---------------------------------------------------------------------------
 
-let tursoClient: Client | null = null;
+type TursoClient = { execute: Function; executeMultiple: Function };
+let tursoClient: TursoClient | null = null;
 
-function getTursoClient(): Client {
+async function getTursoClient(): Promise<TursoClient> {
   if (!tursoClient) {
     const url = process.env.TURSO_DATABASE_URL;
     const authToken = process.env.TURSO_AUTH_TOKEN;
     if (!url) throw new Error("TURSO_DATABASE_URL is not set");
+    const { createClient } = await import("@libsql/client");
     tursoClient = createClient({ url, authToken: authToken ?? undefined });
   }
   return tursoClient;
@@ -101,7 +101,7 @@ export async function execute(
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
   if (isTurso()) {
-    const client = getTursoClient();
+    const client = await getTursoClient();
     const result = await client.execute({
       sql,
       args: args ?? [],
@@ -137,7 +137,7 @@ export async function executeInsert(
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
   if (isTurso()) {
-    const client = getTursoClient();
+    const client = await getTursoClient();
     const result = await client.execute({
       sql,
       args: args ?? [],
@@ -165,7 +165,7 @@ export async function executeUpdate(
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
   if (isTurso()) {
-    const client = getTursoClient();
+    const client = await getTursoClient();
     const result = await client.execute({
       sql,
       args: args ?? [],
@@ -215,7 +215,7 @@ export async function ensureSchema(): Promise<void> {
   schemaReady = true;
 
   if (isTurso()) {
-    const client = getTursoClient();
+    const client = await getTursoClient();
     const schema = `
       CREATE TABLE IF NOT EXISTS manager_profile (
         id INTEGER PRIMARY KEY CHECK (id = 1),
