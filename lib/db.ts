@@ -6,11 +6,13 @@
 //
 // edge.md §2: each deployment has its own independent database.
 
+import type { Client } from "@libsql/client";
+
 // ---------------------------------------------------------------------------
 // Turso client (cloud mode) — dynamic import to avoid native binary install
 // ---------------------------------------------------------------------------
 
-type TursoClient = { execute: Function; executeMultiple: Function };
+type TursoClient = Client;
 let tursoClient: TursoClient | null = null;
 
 async function getTursoClient(): Promise<TursoClient> {
