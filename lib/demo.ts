@@ -151,3 +151,55 @@ export function getDemoCities(): string[] {
   const list = loadWorkingCopy();
   return [...new Set(list.map((a) => a.city))].sort();
 }
+
+// --- Demo data for admin pages (server-side) ---
+
+export function getDemoProfile() {
+  return {
+    name: "سید محمد رضوی",
+    title: "مدیر ارشد بیمه",
+    position_code: " senior_manager",
+    position_start_date: "1400-01-01",
+    bio: "بیش از ۱۵ سال تجربه در صنعت بیمه با تمرکز بر بیمه‌های زندگی و آتیه. عضو انجمن حرفه‌ای بیمهگران.",
+    achievements: JSON.stringify([
+      "top_performer_2023",
+      "golden_club_member",
+      "best_recruiter_2022",
+    ]),
+    current_agent_count: 47,
+    growth_agents_6m: 15,
+    growth_agents_1y: 32,
+    growth_agents_2y: 58,
+    growth_policies_6m: 22,
+    growth_policies_1y: 45,
+    growth_policies_2y: 78,
+    site_theme: "warm",
+    photo_url: "",
+  };
+}
+
+export function getDemoSuccessWallEntries() {
+  return [
+    { id: 1, agent_name: "علی محمدی", quote: "با حمایت تیم، توانستم فروش را ۳ برابر کنم.", images_json: "[]", permission_granted: 1, sort_order: 0, created_at: "2024-01-15" },
+    { id: 2, agent_name: "زهرا کریمی", quote: "از صفر شروع کردم و حالا تیم ۱۰ نفره دارم.", images_json: "[]", permission_granted: 1, sort_order: 1, created_at: "2024-02-20" },
+    { id: 3, agent_name: "رضا حسینی", quote: "اولین بیمه‌نامه عمرم را در ماه اول فروختم.", images_json: "[]", permission_granted: 1, sort_order: 2, created_at: "2024-03-10" },
+  ];
+}
+
+export function getDemoGrowthPathStages() {
+  return [
+    { id: 1, title: "شروع مسیر", description: "آشنایی با اصول پایه بیمه و فروش. گذراندن دوره‌های آموزشی پایه.", sort_order: 0 },
+    { id: 2, title: "رشد فردی", description: "کسب مهارت‌های پیشرفته فروش و مدیریت مشتریان.", sort_order: 1 },
+    { id: 3, title: "رهبری تیم", description: "آموزش و هدایت نمایندگان جدید و مدیریت تیم فروش.", sort_order: 2 },
+    { id: 4, title: "مدیریت ارشد", description: "برنامه‌ریزی استراتژیک و مدیریت سازمانی.", sort_order: 3 },
+  ];
+}
+
+export function getDemoFaqItems() {
+  return [
+    { id: 1, question: "شرایط استخدام چیست؟", answer: "حداقل مدرک کارشناسی، علاقه‌مندی به حوزه بیمه و مهارت ارتباطی بالا.", sort_order: 0 },
+    { id: 2, question: "آیا آموزش ارائه می‌شود؟", answer: "بله، دوره‌های آموزشی جامع از مبتدی تا پیشرفته برگزار می‌شود.", sort_order: 1 },
+    { id: 3, question: "درآمد تقریبی چقدر است؟", answer: "بسته به عملکرد، از ۱۵ تا ۵۰ میلیون تومان در ماه متغیر است.", sort_order: 2 },
+    { id: 4, question: "آیا امکان کار پاره‌وقت وجود دارد؟", answer: "بله، امکان همکاری به صورت پاره‌وقت نیز فراهم است.", sort_order: 3 },
+  ];
+}

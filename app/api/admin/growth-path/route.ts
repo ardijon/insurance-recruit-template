@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { selectAll, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
+import { isDemoMode, getDemoGrowthPathStages } from "@/lib/demo";
 
 export async function GET() {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json(getDemoGrowthPathStages());
+    }
     await ensureSchema();
     const rows = await selectAll(
       "SELECT id, title, description, sort_order FROM growth_path_stages ORDER BY sort_order"

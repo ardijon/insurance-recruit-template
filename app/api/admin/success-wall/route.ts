@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { selectAll, executeUpdate, executeInsert as execInsert, ensureSchema } from "@/lib/db";
+import { isDemoMode, getDemoSuccessWallEntries } from "@/lib/demo";
 
 export async function GET() {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json(getDemoSuccessWallEntries());
+    }
     await ensureSchema();
     const rows = await selectAll(
       "SELECT id, agent_name, quote, images_json, permission_granted, sort_order, created_at FROM success_wall_entries ORDER BY sort_order"

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { selectAll, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
+import { isDemoMode, getDemoFaqItems } from "@/lib/demo";
 
 export async function GET() {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json(getDemoFaqItems());
+    }
     await ensureSchema();
     const rows = await selectAll(
       "SELECT id, question, answer, sort_order FROM faq_items ORDER BY sort_order"

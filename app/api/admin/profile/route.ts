@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
+import { isDemoMode, getDemoProfile } from "@/lib/demo";
 
 export async function GET() {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json(getDemoProfile());
+    }
     await ensureSchema();
     const row = await selectOne(
       "SELECT * FROM manager_profile WHERE id = 1"
