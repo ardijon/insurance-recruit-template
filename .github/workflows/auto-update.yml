@@ -29,7 +29,9 @@ permissions:
 
 jobs:
   sync:
-    if: github.repository != env.UPSTREAM_REPO
+    # `env` context is NOT available in a job-level `if` — hard-code the
+    # upstream path here so this job skips inside the template repo itself.
+    if: github.repository != 'ardijon/insurance-recruit-template'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
