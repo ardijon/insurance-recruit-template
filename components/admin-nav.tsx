@@ -4,23 +4,47 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useUpdateBadge } from "@/components/update-bell";
 import { nowJalali, toPersianDigits } from "@/lib/jalali";
 import { adminFetch } from "@/lib/api-client";
 
-const PRIMARY_NAV = [
-  { href: "/admin", label: "متقاضیان", icon: "people" },
-  { href: "/admin/profile", label: "پروفایل", icon: "person" },
-  { href: "/admin/success-wall", label: "موفقیت‌ها", icon: "star" },
-  { href: "/admin/visual-story", label: "روایت تصویری", icon: "camera" },
-  { href: "/admin/growth-path", label: "مسیر رشد", icon: "trend" },
-  { href: "/admin/faq", label: "سوالات", icon: "help" },
-] as const;
+// ─── ساختار منو: سه گروه — مدیریت / محتوای سایت / سیستم ───
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+}
 
-const SECONDARY_NAV = [
-  { href: "/admin/settings", label: "تنظیمات", icon: "settings" },
-] as const;
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: "مدیریت",
+    items: [{ href: "/admin", label: "متقاضیان", icon: "people" }],
+  },
+  {
+    title: "محتوای سایت",
+    items: [
+      { href: "/admin/profile", label: "پروفایل مدیر", icon: "person" },
+      { href: "/admin/success-wall", label: "موفقیت‌ها", icon: "star" },
+      { href: "/admin/visual-story", label: "روایت تصویری", icon: "camera" },
+      { href: "/admin/growth-path", label: "مسیر رشد", icon: "trend" },
+      { href: "/admin/faq", label: "سوالات متداول", icon: "help" },
+    ],
+  },
+  {
+    title: "سیستم",
+    items: [
+      { href: "/admin/location", label: "موقعیت مکانی", icon: "pin" },
+      { href: "/admin/updates", label: "به‌روزرسانی", icon: "bell" },
+      { href: "/admin/settings", label: "تنظیمات", icon: "settings" },
+    ],
+  },
+];
 
-const MOBILE_PRIMARY = PRIMARY_NAV.slice(0, 3);
+const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+const MOBILE_PRIMARY_HREFS = ["/admin", "/admin/profile", "/admin/success-wall"];
+const MOBILE_PRIMARY = MOBILE_PRIMARY_HREFS.map(
+  (href) => ALL_ITEMS.find((i) => i.href === href)!
+);
 
 function NavIcon({ icon, className }: { icon: string; className?: string }) {
   if (icon === "people")
@@ -67,6 +91,20 @@ function NavIcon({ icon, className }: { icon: string; className?: string }) {
         <circle cx="12" cy="13" r="4" />
       </svg>
     );
+  if (icon === "pin")
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    );
+  if (icon === "bell")
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    );
   if (icon === "settings")
     return (
       <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -107,27 +145,72 @@ function NavIcon({ icon, className }: { icon: string; className?: string }) {
   return null;
 }
 
-function NavLink({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ms-auto flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-cta-contrast">
+      {toPersianDigits(Math.min(count, 9))}
+    </span>
+  );
+}
+
+function SidebarLink({ item, active, badge = 0 }: { item: NavItem; active: boolean; badge?: number }) {
   return (
     <Link
-      href={href}
-      className={`relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors ${
+      href={item.href}
+      className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors ${
         active
           ? "bg-brand-cta/10 text-brand-cta"
-          : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
+          : "text-text-secondary hover:bg-bg-surface hover:text-text-primary"
       }`}
     >
-      <NavIcon icon={icon} className="size-4" />
-      {label}
+      <NavIcon icon={item.icon} className="size-4.5 shrink-0" />
+      <span className="truncate">{item.label}</span>
+      <Badge count={badge} />
       {active && (
-        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-brand-cta" />
+        <span className="absolute inset-y-1.5 right-0 w-0.5 rounded-full bg-brand-cta" aria-hidden />
       )}
     </Link>
   );
 }
 
+function GroupTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-text-secondary/70">
+      {children}
+    </p>
+  );
+}
+
+function LogoutButton({ className = "" }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        adminFetch("/api/auth/logout", { method: "POST" })
+          .then(() => window.location.reload())
+          .catch(() => alert("خطا در خروج از پنل"))
+      }
+      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-danger no-underline transition-colors hover:bg-danger/10 ${className}`}
+    >
+      <NavIcon icon="logout" className="size-4.5 shrink-0" />
+      خروج از حساب
+    </button>
+  );
+}
+
+function AdminDateDisplay() {
+  const n = nowJalali();
+  return (
+    <p className="text-xs text-text-secondary">
+      {toPersianDigits(n.day)} {n.monthName} {toPersianDigits(n.year)}
+    </p>
+  );
+}
+
 export function AdminNav() {
   const pathname = usePathname();
+  const updateBadge = useUpdateBadge();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -149,7 +232,7 @@ export function AdminNav() {
     };
   }, [drawerOpen]);
 
-  // Close drawer on navigation
+  // بستن خودکار کشو پس از ناوبری
   const prevPathname = useRef(pathname);
   useEffect(() => {
     if (prevPathname.current !== pathname) {
@@ -158,84 +241,69 @@ export function AdminNav() {
     }
   }, [pathname]);
 
-  const isSecondaryActive = SECONDARY_NAV.some((item) => pathname === item.href);
+  const isUtilityActive = ["/admin/updates", "/admin/location", "/admin/settings"].includes(pathname);
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-bg-base/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          {/* Brand */}
-          <Link href="/admin" className="flex items-center gap-2 text-brand-emphasis no-underline shrink-0">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-brand-cta/10">
-              <NavIcon icon="lock" className="size-4 text-brand-cta" />
+      {/* ─── دسکتاپ: سایدبار ثابت سمت راست ─── */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-l border-border bg-bg-base md:flex">
+        {/* برند */}
+        <Link href="/admin" className="flex shrink-0 items-center gap-2.5 border-b border-border/60 px-4 py-4 no-underline">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-cta/10">
+            <NavIcon icon="lock" className="size-4.5 text-brand-cta" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold leading-tight text-brand-emphasis">پنل مدیریت</p>
+            <p className="truncate text-[10px] text-text-secondary">مدیریت جذب نمایندگان</p>
+          </div>
+        </Link>
+
+        {/* گروه‌های ناوبری */}
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title}>
+              <GroupTitle>{group.title}</GroupTitle>
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <SidebarLink
+                    key={item.href}
+                    item={item}
+                    active={pathname === item.href}
+                    badge={item.href === "/admin/updates" ? updateBadge : 0}
+                  />
+                ))}
+              </div>
             </div>
-            <span className="text-base font-bold hidden sm:inline">پنل مدیریت</span>
-          </Link>
+          ))}
+        </nav>
 
-          {/* Desktop nav — primary group */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {PRIMARY_NAV.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                active={pathname === item.href}
-              />
-            ))}
-          </nav>
-
-          {/* Right controls */}
-          <div className="flex items-center gap-1">
-            {/* Desktop: separator + secondary nav */}
-            <div className="hidden lg:flex items-center gap-1">
-              <span className="mx-1 h-5 w-px bg-border" />
-              {SECONDARY_NAV.map((item) => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  icon={item.icon}
-                  label={item.label}
-                  active={pathname === item.href}
-                />
-              ))}
-            </div>
-
-            <span className="hidden lg:block mx-1 h-5 w-px bg-border" />
-
+        {/* ابزارهای پایین سایدبار */}
+        <div className="shrink-0 space-y-0.5 border-t border-border/60 px-3 py-3">
+          <SidebarLink item={{ href: "/", label: "مشاهده سایت", icon: "home" }} active={false} />
+          <SidebarLink item={{ href: "/admin/change-password", label: "تغییر رمز عبور", icon: "lock" }} active={false} />
+          <LogoutButton className="w-full" />
+          <div className="mt-1 flex items-center justify-between border-t border-border/60 px-1 pt-2.5">
             <AdminDateDisplay />
             <ThemeToggle />
-
-            <Link
-              href="/"
-              className="flex size-9 items-center justify-center rounded-lg text-text-secondary no-underline transition-colors hover:bg-bg-surface hover:text-text-primary"
-              title="صفحه اصلی"
-            >
-              <NavIcon icon="home" className="size-4.5" />
-            </Link>
-
-            <Link
-              href="/admin/change-password"
-              className="flex size-9 items-center justify-center rounded-lg text-text-secondary no-underline transition-colors hover:bg-bg-surface hover:text-text-primary"
-              title="تغییر رمز عبور"
-            >
-              <NavIcon icon="lock" className="size-4.5" />
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => adminFetch("/api/auth/logout", { method: "POST" }).then(() => window.location.reload()).catch(() => alert("خطا در خروج از پنل"))}
-              className="hidden sm:inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 no-underline transition-colors hover:bg-red-500/10"
-              title="خروج از پنل"
-            >
-              <NavIcon icon="logout" className="size-3.5" />
-              خروج
-            </button>
           </div>
+        </div>
+      </aside>
+
+      {/* ─── موبایل: نوار بالا ─── */}
+      <header className="glass sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-border px-4 md:hidden">
+        <Link href="/admin" className="flex items-center gap-2 no-underline">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-brand-cta/10">
+            <NavIcon icon="lock" className="size-4 text-brand-cta" />
+          </div>
+          <span className="text-sm font-bold text-brand-emphasis">پنل مدیریت</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <AdminDateDisplay />
+          <ThemeToggle />
         </div>
       </header>
 
-      {/* Mobile bottom nav — 3 primary + more button */}
+      {/* ─── موبایل: نوار پایین ─── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-bg-base md:hidden" style={{ backgroundColor: "var(--color-bg-base)" }}>
         <div className="flex items-center justify-around px-2 py-1.5">
           {MOBILE_PRIMARY.map((item) => {
@@ -257,115 +325,67 @@ export function AdminNav() {
             );
           })}
 
-          {/* More button */}
+          {/* دکمه بیشتر */}
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
             className={`relative flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 transition-colors min-w-0 ${
-              isSecondaryActive ? "text-brand-cta" : "text-text-secondary"
+              isUtilityActive ? "text-brand-cta" : "text-text-secondary"
             }`}
           >
-            <NavIcon icon="more" className={`size-5 ${isSecondaryActive ? "stroke-[2.2]" : ""}`} />
+            <NavIcon icon="more" className={`size-5 ${isUtilityActive ? "stroke-[2.2]" : ""}`} />
             <span className="text-[10px] font-medium">بیشتر</span>
-            {isSecondaryActive && (
+            {updateBadge > 0 && (
+              <span className="absolute top-0.5 right-2 flex size-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-cta-contrast">
+                {toPersianDigits(Math.min(updateBadge, 9))}
+              </span>
+            )}
+            {isUtilityActive && (
               <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-brand-cta" />
             )}
           </button>
         </div>
       </nav>
 
-      {/* Mobile drawer overlay */}
+      {/* ─── موبایل: کشوی «بیشتر» ─── */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 md:hidden" onClick={() => setDrawerOpen(false)} />
       )}
 
-      {/* Mobile drawer */}
       <div
         ref={drawerRef}
-        className={`fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-border bg-bg-base transition-transform duration-300 md:hidden ${
+        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-2xl border-t border-border bg-bg-base transition-transform duration-300 md:hidden ${
           drawerOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
         <div className="mx-auto max-w-lg p-4">
-          {/* Drawer handle */}
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
 
-          {/* Secondary nav items */}
-          <div className="space-y-1">
-            {SECONDARY_NAV.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium no-underline transition-colors ${
-                    active
-                      ? "bg-brand-cta/10 text-brand-cta"
-                      : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
-                  }`}
-                >
-                  <NavIcon icon={item.icon} className="size-5" />
-                  {item.label}
-                </Link>
-              );
-            })}
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.title} className={gi > 0 ? "mt-4" : ""}>
+              <GroupTitle>{group.title}</GroupTitle>
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <SidebarLink
+                    key={item.href}
+                    item={item}
+                    active={pathname === item.href}
+                    badge={item.href === "/admin/updates" ? updateBadge : 0}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
 
-            {/* Remaining primary items not in bottom bar */}
-            {PRIMARY_NAV.slice(3).map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium no-underline transition-colors ${
-                    active
-                      ? "bg-brand-cta/10 text-brand-cta"
-                      : "text-text-secondary hover:text-text-primary hover:bg-bg-surface"
-                  }`}
-                >
-                  <NavIcon icon={item.icon} className="size-5" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Divider */}
           <div className="my-3 h-px bg-border" />
 
-          {/* Utility actions */}
-          <div className="space-y-1">
-            <Link
-              href="/"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary no-underline transition-colors hover:text-text-primary hover:bg-bg-surface"
-            >
-              <NavIcon icon="home" className="size-5" />
-              صفحه اصلی
-            </Link>
-            <Link
-              href="/admin/change-password"
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-secondary no-underline transition-colors hover:text-text-primary hover:bg-bg-surface"
-            >
-              <NavIcon icon="lock" className="size-5" />
-              تغییر رمز عبور
-            </Link>
-            <button
-              type="button"
-              onClick={() => adminFetch("/api/auth/logout", { method: "POST" }).then(() => window.location.reload()).catch(() => alert("خطا در خروج از پنل"))}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 no-underline transition-colors hover:bg-red-500/10"
-            >
-              <NavIcon icon="logout" className="size-5" />
-              خروج
-            </button>
+          <div className="space-y-0.5 pb-2">
+            <SidebarLink item={{ href: "/", label: "مشاهده سایت", icon: "home" }} active={false} />
+            <SidebarLink item={{ href: "/admin/change-password", label: "تغییر رمز عبور", icon: "lock" }} active={false} />
+            <LogoutButton className="w-full" />
           </div>
         </div>
       </div>
     </>
   );
-}
-
-function AdminDateDisplay() {
-  const n = nowJalali();
-  const display = `${toPersianDigits(n.day)} ${n.monthName}`;
-  return <p className="text-xs text-text-secondary hidden lg:block shrink-0">{display}</p>;
 }

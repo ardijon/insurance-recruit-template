@@ -19,7 +19,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   contacted: { label: "تماس گرفته شده", color: "text-amber-600", bg: "bg-amber-50 ring-amber-200" },
   interviewed: { label: "مصاحبه شده", color: "text-purple-600", bg: "bg-purple-50 ring-purple-200" },
   hired: { label: " استخدام شده", color: "text-green-600", bg: "bg-green-50 ring-green-200" },
-  rejected: { label: "رد شده", color: "text-red-500", bg: "bg-red-50 ring-red-200" },
+  rejected: { label: "رد شده", color: "text-danger", bg: "bg-danger/10 ring-danger/30" },
 };
 
 const SECTIONS = [

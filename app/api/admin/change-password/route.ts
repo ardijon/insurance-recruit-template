@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { verifyPassword, hashPassword } from "@/lib/auth";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
 import { isDemoMode } from "@/lib/demo";
+import { checkRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   if (isDemoMode()) {
     return NextResponse.json(
       { error: "تغییر رمز در حالت دمو مجاز نیست" },
       { status: 403 }
     );
+  }
+
+  // Extra throttle on top of the session check: brute-forcing the current
+  // password through this endpoint must be as expensive as the login page.
+  if (!(await checkRateLimit(getRateLimitKey(request)))) {
+    return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
   }
 
   let body: { current_password?: string; new_password?: string };

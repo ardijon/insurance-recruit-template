@@ -109,7 +109,7 @@ export async function execute(
       args: args ?? [],
     });
     return {
-      rows: result.rows.map((r: any) => r as unknown as DbRow),
+      rows: result.rows.map((r: Record<string, unknown>) => r as unknown as DbRow),
       rowsAffected: Number(result.rowsAffected),
       lastInsertRowid: Number(result.lastInsertRowid),
     };
@@ -145,7 +145,7 @@ export async function executeInsert(
       args: args ?? [],
     });
     return {
-      rows: result.rows.map((r: any) => r as unknown as DbRow),
+      rows: result.rows.map((r: Record<string, unknown>) => r as unknown as DbRow),
       rowsAffected: Number(result.rowsAffected),
       lastInsertRowid: Number(result.lastInsertRowid),
     };
@@ -173,7 +173,7 @@ export async function executeUpdate(
       args: args ?? [],
     });
     return {
-      rows: result.rows.map((r: any) => r as unknown as DbRow),
+      rows: result.rows.map((r: Record<string, unknown>) => r as unknown as DbRow),
       rowsAffected: Number(result.rowsAffected),
       lastInsertRowid: Number(result.lastInsertRowid),
     };
@@ -204,6 +204,27 @@ export async function selectAll(
 ): Promise<DbRow[]> {
   const result = await execute(sql, args);
   return result.rows;
+}
+
+// Reorder helper: persists {id, sort_order}[] in ONE atomic UPDATE (CASE-based)
+// instead of one query per row. `table` must be a hard-coded literal from our
+// own code — never user input.
+export async function updateSortOrders(
+  table: string,
+  orders: { id: number; sort_order: number }[]
+): Promise<void> {
+  const rows = orders
+    .map((o) => ({ id: Number(o.id), order: Number(o.sort_order) }))
+    .filter((o) => Number.isInteger(o.id) && Number.isInteger(o.order));
+  if (rows.length === 0) return;
+  const cases = rows.map(() => "WHEN ? THEN ?").join(" ");
+  const placeholders = rows.map(() => "?").join(",");
+  const args: (string | number | null)[] = [];
+  for (const r of rows) args.push(r.id, r.order);
+  await executeUpdate(
+    `UPDATE ${table} SET sort_order = CASE id ${cases} END WHERE id IN (${placeholders})`,
+    [...args, ...rows.map((r) => r.id)]
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -332,7 +353,7 @@ async function migrateDbTurso(client: Client): Promise<void> {
       sql: `PRAGMA table_info(${table})`,
       args: [],
     });
-    const colNames = result.rows.map((r: any) => r.name);
+    const colNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
     if (!colNames.includes(col)) {
       await client.execute({
         sql: `ALTER TABLE ${table} ADD COLUMN ${col} ${typedef}`,

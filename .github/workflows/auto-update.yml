@@ -1,0 +1,57 @@
+name: Auto update from upstream
+
+# این فایل همراه قالب به کلون خصوصی هر خریدار منتقل می‌شود و ریپوی خریدار
+# را خودکار با نسخه جدید قالب همگام می‌کند؛ push حاصل باعث redeploy خودکار
+# در پلتفرم متصل (Cloudflare/Vercel/...) می‌شود.
+#
+# یک‌بار قبل از توزیع، مالک محصول:
+#   1) مقدار UPSTREAM_REPO را تنظیم کند (مسیر ریپوی خصوصی قالب).
+#   2) در هر ریپوی خریدار، سکرت UPSTREAM_PAT را بگذارد:
+#      PAT با دسترسی contents:read روی ریپوی قالب (فقط خواندن).
+#
+# تریگرها: روزانه ۰۳:۰۰ UTC — یا فوری با دستور
+#   npm run release  (اسکریپت repository_dispatch برای همه خریداران)
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  repository_dispatch:
+    types: [template-update]
+  workflow_dispatch:
+
+env:
+  # مسیر ریپوی خصوصی قالب — کلون‌های خریدار از همین آدرس sync می‌شوند.
+  # در خودِ این ریپو، شرط if پایین باعث می‌شود job اجرا نشود.
+  UPSTREAM_REPO: ardijon/insurance-recruit-template
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.repository != env.UPSTREAM_REPO
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync with upstream
+        env:
+          UPSTREAM_PAT: ${{ secrets.UPSTREAM_PAT }}
+        run: |
+          if [ -z "$UPSTREAM_PAT" ]; then
+            echo "::error::سکرت UPSTREAM_PAT تنظیم نشده — همگام‌سازی خودکار غیرفعال است"
+            exit 1
+          fi
+          git config user.name "update-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git remote add upstream "https://x-access-token:${UPSTREAM_PAT}@github.com/${UPSTREAM_REPO}.git"
+          git fetch upstream main --tags --force
+          if git merge --ff-only "upstream/main"; then
+            git push origin HEAD
+            echo "ریپوی خریدار با موفقیت به‌روزرسانی شد"
+          else
+            echo "::error::merge سریع ممکن نیست (تغییرات محلی در ریپوی خریدار) — آپدیت دستی لازم است"
+            exit 1
+          fi

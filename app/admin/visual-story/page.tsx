@@ -90,7 +90,7 @@ export default function VisualStoryPage() {
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {uploading ? "در حال آپلود..." : "+ افزودن عکس"}
         </button>
@@ -112,7 +112,7 @@ export default function VisualStoryPage() {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); handleRemove(img); }}
-                className="absolute top-2 left-2 size-7 flex items-center justify-center rounded-full bg-red-500/80 text-white text-xs opacity-70 hover:opacity-100 active:opacity-100 transition-opacity"
+                className="absolute top-2 left-2 size-7 flex items-center justify-center rounded-full bg-danger/80 text-cta-contrast text-xs opacity-70 hover:opacity-100 active:opacity-100 transition-opacity"
                 title="حذف عکس"
               >
                 ×

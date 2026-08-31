@@ -100,7 +100,7 @@ const PERSIAN_DIGIT_MAP: Record<string, string> = {
   "5": "۵", "6": "۶", "7": "۷", "8": "۸", "9": "۹",
 };
 
-function toPersianDigits(num: number): string {
+function toPersianDigits(num: number | string): string {
   return String(num).replace(/\d/g, (d) => PERSIAN_DIGIT_MAP[d]);
 }
 

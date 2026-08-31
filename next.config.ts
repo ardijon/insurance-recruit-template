@@ -13,6 +13,8 @@ const csp = [
   "img-src 'self' data: blob: https://api.qrserver.com",
   "font-src 'self'",
   "connect-src 'self'",
+  // Google Maps embed (location section + admin picker)
+  "frame-src https://maps.google.com https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
@@ -23,7 +25,7 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-XSS-Protection", value: "1; mode=block" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
   { key: "Content-Security-Policy", value: csp },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];

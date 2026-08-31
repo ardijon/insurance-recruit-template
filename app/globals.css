@@ -1,37 +1,51 @@
 @import "tailwindcss";
 
 /* Site theme — chosen by the manager via the admin panel.
-   ".theme-warm" (default) = warm professional light palette
-   ".theme-dark"           = dark palette
-   The active class is applied server-side by app/layout.tsx. */
+   ".theme-warm" (default) = warm ivory light palette (Ivory & Petrol)
+   ".theme-dark"           = deep navy dark palette
+   The active class is applied server-side by app/layout.tsx.
+   All text tokens meet WCAG 2.1 AA (ratios in design.md §3). */
 @custom-variant dark (&:where(.theme-dark, .theme-dark *));
 
 .theme-warm {
-  --color-bg-base: #f7f5f0;
-  --color-bg-surface: #efebe4;
+  --color-bg-base: #faf8f4;
+  --color-bg-surface: #f1ede6;
   --color-text-primary: #1e1b16;
-  --color-text-secondary: #736b64;
-  --color-border: #ddd7ce;
+  --color-text-secondary: #6b6459;
+  --color-border: #d6cfc2;
   --color-brand-emphasis: #1b3a4b;
-  --color-brand-cta: #2a6b8a;
-  --color-accent: #c48a2b;
-  --color-success: #16a34a;
+  --color-brand-cta: #256079;
+  --color-cta-contrast: #ffffff;
+  --color-accent: #8a5c13;
+  --color-success: #15803d;
+  --color-danger: #b91c1c;
+
+  /* Elevation — warm-tinted, soft */
+  --shadow-card: 0 1px 2px rgb(30 27 22 / 0.04), 0 4px 16px rgb(30 27 22 / 0.06);
+  --shadow-pop: 0 4px 12px rgb(30 27 22 / 0.08), 0 16px 48px rgb(30 27 22 / 0.12);
 }
 
 .theme-dark {
   --color-bg-base: #0b1420;
-  --color-bg-surface: #111827;
+  --color-bg-surface: #111c2b;
   --color-text-primary: #f3f4f6;
   --color-text-secondary: #9ca3af;
-  --color-border: #1f2937;
+  --color-border: #223047;
   --color-brand-emphasis: #6fa8dc;
-  --color-brand-cta: #3b82c4;
+  --color-brand-cta: #4a90d9;
+  --color-cta-contrast: #0b1420;
   --color-accent: #d9a94a;
   --color-success: #22c55e;
+  --color-danger: #f87171;
+
+  /* Elevation — dark surfaces need subtle depth, not heavy shadows */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px rgb(0 0 0 / 0.3);
+  --shadow-pop: 0 12px 40px rgb(0 0 0 / 0.5);
 }
 
 /* Maps the raw tokens above into Tailwind v4's utility namespace, e.g.
-   bg-bg-base, text-text-primary, border-border, bg-brand-cta, text-accent. */
+   bg-bg-base, text-text-primary, border-border, bg-brand-cta, text-accent,
+   text-cta-contrast, bg-danger, shadow-card, shadow-pop. */
 @theme inline {
   --color-bg-base: var(--color-bg-base);
   --color-bg-surface: var(--color-bg-surface);
@@ -40,10 +54,24 @@
   --color-border: var(--color-border);
   --color-brand-emphasis: var(--color-brand-emphasis);
   --color-brand-cta: var(--color-brand-cta);
+  --color-cta-contrast: var(--color-cta-contrast);
   --color-accent: var(--color-accent);
   --color-success: var(--color-success);
+  --color-danger: var(--color-danger);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
 
   --font-sans: var(--font-vazirmatn);
+}
+
+/* Glassmorphism — reserved for chrome surfaces only (sticky headers,
+   filter bars, admin sidebar). Never wrap content containers in .glass:
+   translucency hurts Persian text readability. */
+.glass {
+  background: color-mix(in srgb, var(--color-bg-base) 78%, transparent);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
 }
 
 html {

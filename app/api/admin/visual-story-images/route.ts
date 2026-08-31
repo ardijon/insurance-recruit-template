@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath } from "next/cache";
 import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 import { writeFile, mkdir, unlink } from "fs/promises";
@@ -19,6 +20,9 @@ function validateImage(file: File): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     const formData = await request.formData();
     const file = formData.get("image") as File | null;
@@ -71,6 +75,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let imageUrl: string | null = null;
 
   const contentType = request.headers.get("content-type") ?? "";

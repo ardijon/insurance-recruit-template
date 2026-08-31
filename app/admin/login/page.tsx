@@ -71,12 +71,10 @@ export default function AdminLoginPage() {
       }
     }
 
-    const body: Record<string, string | boolean> = {};
+    const body: Record<string, string> = {};
     if (mode === "reset") {
       body.reset_code = code.trim();
       body.new_password = password;
-    } else if (passwordless && passwordSet) {
-      body.passwordless = true;
     } else {
       body.password = password;
     }
@@ -104,7 +102,6 @@ export default function AdminLoginPage() {
 
   const isRecover = mode === "reset";
   const isSetting = !isRecover && !passwordSet && mode === "login";
-  const [passwordless, setPasswordless] = useState(false);
 
   const title = mode === "request" || mode === "reset"
     ? "بازیابی رمز عبور"
@@ -114,14 +111,16 @@ export default function AdminLoginPage() {
     ? "برای دریافت کد تأیید روی دکمه زیر کلیک کنید"
     : mode === "reset"
       ? "کد تأیید تلگرام را وارد کرده و رمز عبور جدید خود را بنویسید"
-      : "با رمز عبور یا بدون رمز وارد شوید";
+      : isSetting
+        ? "برای شروع، رمز عبور مدیریتی خود را تعیین کنید"
+        : "رمز عبور خود را وارد کنید";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg-base px-4">
       <div className="w-full max-w-sm animate-scale-in">
         <div className="rounded-2xl border border-border bg-bg-surface p-8 shadow-sm">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-brand-cta text-white shadow-sm">
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-brand-cta text-cta-contrast shadow-sm">
               <svg className="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -142,7 +141,7 @@ export default function AdminLoginPage() {
                   type="button"
                   onClick={requestCode}
                   disabled={loading}
-                  className="w-full rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="w-full rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {loading ? "در حال ارسال..." : "ارسال کد تأیید به تلگرام"}
                 </button>
@@ -169,8 +168,7 @@ export default function AdminLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={isRecover ? "رمز عبور جدید" : "رمز عبور"}
                     autoFocus={mode !== "reset"}
-                    disabled={passwordless && passwordSet}
-                    className="w-full rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2.5 pe-10 focus:outline-none focus:ring-2 focus:ring-brand-cta text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2.5 pe-10 focus:outline-none focus:ring-2 focus:ring-brand-cta text-center"
                   />
                   <button
                     type="button"
@@ -195,24 +193,6 @@ export default function AdminLoginPage() {
                 </div>
               )}
 
-              {mode === "login" && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="passwordless"
-                    checked={passwordless}
-                    onChange={(e) => {
-                      setPasswordless(e.target.checked);
-                      if (e.target.checked) setPassword("");
-                    }}
-                    className="size-4 rounded border-border text-brand-cta focus:ring-brand-cta"
-                  />
-                  <label htmlFor="passwordless" className="text-sm text-text-secondary">
-                    ورود بدون رمز عبور
-                  </label>
-                </div>
-              )}
-
               {mode === "reset" && (
                 <div className="relative">
                   <input
@@ -226,7 +206,7 @@ export default function AdminLoginPage() {
               )}
 
               {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
+                <div className="flex items-center gap-2 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
                   <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="15" y1="9" x2="9" y2="15" />
@@ -249,8 +229,8 @@ export default function AdminLoginPage() {
               {mode !== "request" && (
                 <button
                   type="submit"
-                  disabled={loading || (!password && !passwordless) || (isRecover && (!confirm || !code)) || checking}
-                  className="w-full rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  disabled={loading || !password || (isRecover && (!confirm || !code)) || checking}
+                  className="w-full rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {loading
                     ? "در حال بررسی..."

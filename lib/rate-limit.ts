@@ -47,30 +47,23 @@ async function purgeExpired(): Promise<void> {
 // we collapse it to a single shared bucket rather than trusting the (spoofable)
 // value. Self-hosted deployments behind a known reverse proxy should set
 // `x-real-ip` (or a single trusted `x-forwarded-for`).
+// RFC1918/loopback/link-local detector — exact octet matching (the previous
+// prefix check "172.2"/"172.3" wrongly classified public IPs like 172.200.x
+// as private, collapsing many visitors into one shared rate-limit bucket).
+const PRIVATE_IP =
+  /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|::1|^f[cd]|^fe80)/i;
+
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     const first = forwarded.split(",")[0].trim();
-    if (
-      first &&
-      !first.startsWith("10.") &&
-      !first.startsWith("192.168.") &&
-      !first.startsWith("172.16.") &&
-      !first.startsWith("172.17.") &&
-      !first.startsWith("172.18.") &&
-      !first.startsWith("172.19.") &&
-      !first.startsWith("172.2") &&
-      !first.startsWith("172.3") &&
-      !first.startsWith("127.") &&
-      !first.startsWith("169.254.") &&
-      !/^\s*$/.test(first)
-    ) {
+    if (first && !PRIVATE_IP.test(first)) {
       return first;
     }
     return "private";
   }
   const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
+  if (realIp && !PRIVATE_IP.test(realIp)) return realIp;
   return "unknown";
 }
 

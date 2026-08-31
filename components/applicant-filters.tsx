@@ -119,7 +119,7 @@ export function FilterBar({ search, onSearchChange, filters, onFilterChange, cit
           </svg>
           <span className="hidden sm:inline">فیلترها</span>
           {active && (
-            <span className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-brand-cta text-[9px] font-bold text-white">
+            <span className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-brand-cta text-[9px] font-bold text-cta-contrast">
               {activeCount}
             </span>
           )}
@@ -130,7 +130,7 @@ export function FilterBar({ search, onSearchChange, filters, onFilterChange, cit
           <button
             type="button"
             onClick={() => onFilterChange(INITIAL)}
-            className="shrink-0 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/20"
+            className="shrink-0 rounded-xl border border-danger/20 bg-danger/10 px-3 py-2.5 text-xs font-medium text-danger transition-colors hover:bg-danger/20"
           >
             پاک کردن
           </button>
@@ -141,7 +141,7 @@ export function FilterBar({ search, onSearchChange, filters, onFilterChange, cit
           <button
             type="button"
             onClick={() => onViewModeChange("table")}
-            className={`flex items-center justify-center p-2.5 transition-colors ${viewMode === "table" ? "bg-brand-cta text-white" : "text-text-secondary hover:text-text-primary"}`}
+            className={`flex items-center justify-center p-2.5 transition-colors ${viewMode === "table" ? "bg-brand-cta text-cta-contrast" : "text-text-secondary hover:text-text-primary"}`}
             title="نمای جدولی"
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -152,7 +152,7 @@ export function FilterBar({ search, onSearchChange, filters, onFilterChange, cit
           <button
             type="button"
             onClick={() => onViewModeChange("card")}
-            className={`flex items-center justify-center p-2.5 transition-colors ${viewMode === "card" ? "bg-brand-cta text-white" : "text-text-secondary hover:text-text-primary"}`}
+            className={`flex items-center justify-center p-2.5 transition-colors ${viewMode === "card" ? "bg-brand-cta text-cta-contrast" : "text-text-secondary hover:text-text-primary"}`}
             title="نمای کارتی"
           >
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -346,7 +346,7 @@ function JalaliDateInput({ label, value, onChange }: { label: string; value: str
           </svg>
           <span className="flex-1 text-right truncate">{displayText || label}</span>
           {value && (
-            <button type="button" onClick={handleClear} className="text-text-secondary hover:text-red-500 shrink-0">
+            <button type="button" onClick={handleClear} className="text-text-secondary hover:text-danger shrink-0">
               <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -405,7 +405,7 @@ function JalaliDateInput({ label, value, onChange }: { label: string; value: str
                   onClick={() => handleDayClick(d.day)}
                   className={`relative rounded-md py-1.5 text-xs font-medium transition-all ${
                     isSelected
-                      ? "bg-brand-cta text-white shadow-sm"
+                      ? "bg-brand-cta text-cta-contrast shadow-sm"
                       : isToday
                         ? "border border-accent text-accent"
                         : "text-text-primary hover:bg-bg-surface"

@@ -77,7 +77,7 @@ export function getDemoApplicants(filters: DemoFilters = {}) {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
 
-  let filtered = list.filter((a) => {
+  const filtered = list.filter((a) => {
     if (filters.search) {
       const q = filters.search.trim();
       if (!a.full_name.includes(q) && !a.phone.includes(q) && !a.city.includes(q)) return false;

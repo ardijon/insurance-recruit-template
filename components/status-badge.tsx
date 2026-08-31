@@ -7,7 +7,7 @@ export const STATUS_CONFIG: Record<string, { label: string; bg: string; text: st
   contacted: { label: "تماس گرفته شده", bg: "bg-accent/10", text: "text-accent" },
   interviewed: { label: "مصاحبه شده", bg: "bg-blue-500/10", text: "text-blue-500" },
   hired: { label: "جذب شده", bg: "bg-success/10", text: "text-success" },
-  rejected: { label: "رد شده", bg: "bg-red-500/10", text: "text-red-500" },
+  rejected: { label: "رد شده", bg: "bg-danger/10", text: "text-danger" },
 };
 
 interface Props {

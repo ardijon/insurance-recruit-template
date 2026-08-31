@@ -110,7 +110,7 @@ export default function SettingsPage() {
 
         <div className="space-y-4">
           <div className="flex gap-3">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-cta text-sm font-bold text-white">۱</div>
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-cta text-sm font-bold text-cta-contrast">۱</div>
             <div>
               <p className="text-sm font-medium text-text-primary">ساخت ربات تلگرام</p>
               <p className="text-xs text-text-secondary mt-0.5">
@@ -120,7 +120,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex gap-3">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-cta text-sm font-bold text-white">۲</div>
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-cta text-sm font-bold text-cta-contrast">۲</div>
             <div>
               <p className="text-sm font-medium text-text-primary">کپی توکن ربات</p>
               <p className="text-xs text-text-secondary mt-0.5">
@@ -130,7 +130,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex gap-3">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-cta text-sm font-bold text-white">۳</div>
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-cta text-sm font-bold text-cta-contrast">۳</div>
             <div>
               <p className="text-sm font-medium text-text-primary">گرفتن شناسه چت</p>
               <p className="text-xs text-text-secondary mt-0.5">
@@ -151,7 +151,7 @@ export default function SettingsPage() {
               value={botToken}
               onChange={(e) => { setBotToken(e.target.value); setSaved(false); setTestResult(null); }}
               placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-              className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
+              className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/70 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
               dir="ltr"
             />
             <button
@@ -182,7 +182,7 @@ export default function SettingsPage() {
             value={chatId}
             onChange={(e) => { setChatId(e.target.value); setSaved(false); setTestResult(null); }}
             placeholder="-1001234567890"
-            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
+            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/70 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
             dir="ltr"
           />
           <p className="mt-1 text-[11px] text-text-secondary">
@@ -191,7 +191,7 @@ export default function SettingsPage() {
         </div>
 
         {testResult && (
-          <div className={`rounded-xl px-4 py-3 text-sm font-medium ${testResult.ok ? "bg-success/10 text-success" : "bg-red-500/10 text-red-500"}`}>
+          <div className={`rounded-xl px-4 py-3 text-sm font-medium ${testResult.ok ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
             {testResult.msg}
           </div>
         )}
@@ -209,7 +209,7 @@ export default function SettingsPage() {
             type="button"
             onClick={handleSave}
             disabled={saving || !botToken || !chatId}
-            className="flex-1 rounded-xl bg-brand-cta px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex-1 rounded-xl bg-brand-cta px-4 py-3 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "در حال ذخیره..." : saved ? "ذخیره شد ✓" : "ذخیره تنظیمات"}
           </button>
@@ -242,7 +242,7 @@ export default function SettingsPage() {
             value={socialTelegram}
             onChange={(e) => { setSocialTelegram(e.target.value); setSaved(false); }}
             placeholder="https://t.me/your_channel"
-            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
+            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/70 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
             dir="ltr"
           />
         </div>
@@ -260,7 +260,7 @@ export default function SettingsPage() {
             value={socialWhatsapp}
             onChange={(e) => { setSocialWhatsapp(e.target.value); setSaved(false); }}
             placeholder="https://wa.me/989121234567"
-            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
+            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/70 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
             dir="ltr"
           />
           <p className="mt-1 text-[11px] text-text-secondary">
@@ -281,7 +281,7 @@ export default function SettingsPage() {
             value={socialInstagram}
             onChange={(e) => { setSocialInstagram(e.target.value); setSaved(false); }}
             placeholder="https://instagram.com/your_page"
-            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
+            className="w-full rounded-xl border border-border bg-bg-base px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/70 focus:border-brand-cta focus:outline-none focus:ring-1 focus:ring-brand-cta/30 ltr text-left"
             dir="ltr"
           />
         </div>
@@ -292,7 +292,7 @@ export default function SettingsPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full rounded-xl bg-brand-cta px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-xl bg-brand-cta px-4 py-3 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "در حال ذخیره..." : saved ? "ذخیره شد ✓" : "ذخیره تنظیمات"}
           </button>

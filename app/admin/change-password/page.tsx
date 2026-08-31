@@ -60,7 +60,7 @@ export default function ChangePasswordPage() {
     <div className="mx-auto max-w-md py-12 px-4">
       <div className="rounded-2xl border border-border bg-bg-surface p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-brand-cta text-white shadow-sm">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-brand-cta text-cta-contrast shadow-sm">
             <svg className="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -118,7 +118,7 @@ export default function ChangePasswordPage() {
           </label>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
+            <div className="flex items-center gap-2 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
               <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="15" y1="9" x2="9" y2="15" />
@@ -142,7 +142,7 @@ export default function ChangePasswordPage() {
             <button
               type="submit"
               disabled={loading || !currentPassword || !newPassword || !confirmPassword}
-              className="flex-1 rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-brand-cta px-4 py-2.5 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "در حال ذخیره..." : "ذخیره رمز جدید"}
             </button>

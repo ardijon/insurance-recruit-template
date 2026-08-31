@@ -160,11 +160,11 @@ export default function GrowthPathPage() {
         <h1 className="text-2xl font-bold text-text-primary">مسیر رشد نمایندگان</h1>
         <div className="flex gap-2">
           {dirty && (
-            <button type="button" onClick={saveOrder} className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90">
+            <button type="button" onClick={saveOrder} className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90">
               ذخیره ترتیب جدید
             </button>
           )}
-          <button type="button" onClick={() => setShowForm(!showForm)} className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90">
+          <button type="button" onClick={() => setShowForm(!showForm)} className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90">
             {showForm ? "انصراف" : "افزودن مرحله"}
           </button>
         </div>
@@ -283,7 +283,7 @@ export default function GrowthPathPage() {
         <div className="mb-6 rounded-xl border border-border bg-bg-surface p-4 flex flex-col gap-3 animate-fade-in">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان مرحله" className="rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cta" />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="توضیحات مرحله" rows={2} className="rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cta resize-none" />
-          <button type="button" onClick={handleAdd} disabled={!title.trim()} className="self-start rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={handleAdd} disabled={!title.trim()} className="self-start rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50">
             افزودن مرحله
           </button>
         </div>
@@ -309,7 +309,7 @@ export default function GrowthPathPage() {
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cta" />
                   <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} className="rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cta resize-none" />
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => handleEdit(s)} disabled={!editTitle.trim()} className="rounded-lg bg-success px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+                    <button type="button" onClick={() => handleEdit(s)} disabled={!editTitle.trim()} className="rounded-lg bg-success px-4 py-1.5 text-xs font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50">
                       ذخیره
                     </button>
                     <button type="button" onClick={cancelEdit} className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-base">
@@ -330,7 +330,7 @@ export default function GrowthPathPage() {
                     <button type="button" onClick={() => startEdit(s)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-base">
                       ویرایش
                     </button>
-                    <button type="button" onClick={() => handleDelete(s.id)} className="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-500 hover:text-white">
+                    <button type="button" onClick={() => handleDelete(s.id)} className="rounded-lg border border-danger/30 px-3 py-1.5 text-xs text-danger transition-colors hover:bg-danger hover:text-cta-contrast">
                       حذف
                     </button>
                   </div>

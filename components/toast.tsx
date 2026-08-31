@@ -13,7 +13,7 @@ export function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove
           className={`animate-fade-up rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-md ${
             t.type === "success"
               ? "border-success/30 bg-success/10 text-success"
-              : "border-red-500/30 bg-red-500/10 text-red-500"
+              : "border-danger/30 bg-danger/10 text-danger"
           }`}
         >
           <div className="flex items-center gap-2">

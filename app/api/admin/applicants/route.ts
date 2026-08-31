@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { selectOne, selectAll, executeUpdate, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoApplicants, updateDemoApplicantStatus, scheduleDemoAppointment, deleteDemoApplicant } from "@/lib/demo";
 
@@ -7,6 +8,9 @@ const VALID_SORT = ["created_at", "score", "full_name", "appointment_date"] as c
 type SortField = (typeof VALID_SORT)[number];
 
 export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
 
   if (isDemoMode()) {
@@ -74,12 +78,14 @@ export async function GET(request: NextRequest) {
   ) as { cnt: number };
   const total = totalRow.cnt;
 
+  // Phone numbers and motivations are admin-only PII — never SELECT *.
+  // Deterministic tiebreaker on id for stable pagination.
   const data = await selectAll(
     `SELECT id, full_name, phone, city, sales_background, network_size,
-     availability, motivation, score, referral_code,
+      availability, motivation, score, referral_code,
       appointment_date, appointment_jalali, appointment_time, status, created_at
       FROM applicants ${where}
-     ORDER BY ${sortBy} ${sortOrder}
+     ORDER BY ${sortBy} ${sortOrder}, id ASC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
@@ -91,6 +97,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: {
     id?: number;
     appointment_date?: string | null;
@@ -122,11 +131,21 @@ export async function PATCH(request: NextRequest) {
   await ensureSchema();
 
   if (body.appointment_date !== undefined || body.appointment_time !== undefined) {
+    // جلوگیری از رزرو همزمان یک بازه: هر ترکیب تاریخ+ساعت فقط برای یک متقاضی
+    if (body.appointment_date && body.appointment_time) {
+      const conflict = await selectOne(
+        "SELECT id FROM applicants WHERE appointment_date = ? AND appointment_time = ? AND id != ? LIMIT 1",
+        [body.appointment_date, body.appointment_time, body.id]
+      );
+      if (conflict) {
+        return NextResponse.json({ error: "این بازه زمانی قبلاً برای متقاضی دیگری رزرو شده است" }, { status: 409 });
+      }
+    }
     await executeUpdate(
       `UPDATE applicants SET
-        appointment_date = COALESCE(?, appointment_date),
-        appointment_jalali = COALESCE(?, appointment_jalali),
-        appointment_time = COALESCE(?, appointment_time)
+        appointment_date = ?,
+        appointment_jalali = ?,
+        appointment_time = ?
        WHERE id = ?`,
       [body.appointment_date ?? null, body.appointment_jalali ?? null, body.appointment_time ?? null, body.id]
     );
@@ -143,6 +162,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) {

@@ -155,7 +155,7 @@ export function ApplicationForm() {
   if (done) {
     return (
       <section className="flex flex-col items-center gap-4 py-16">
-        <div className="size-16 rounded-full bg-[var(--color-success)] flex items-center justify-center text-white text-3xl">
+        <div className="size-16 rounded-full bg-[var(--color-success)] flex items-center justify-center text-cta-contrast text-3xl">
           ✓
         </div>
         <h2 className="text-2xl font-bold text-[var(--color-brand-emphasis)]">
@@ -190,7 +190,7 @@ export function ApplicationForm() {
             <div
               className={`size-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                 i <= step
-                  ? "bg-[var(--color-brand-cta)] text-white"
+                  ? "bg-[var(--color-brand-cta)] text-cta-contrast"
                   : "bg-[var(--color-border)] text-[var(--color-text-secondary)]"
               }`}
             >
@@ -217,7 +217,7 @@ export function ApplicationForm() {
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              نام و نام خانوادگی <span className="text-red-500">*</span>
+              نام و نام خانوادگی <span className="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -226,11 +226,11 @@ export function ApplicationForm() {
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)]"
               placeholder="مثال: علی محمدی"
             />
-            {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
+            {errors.full_name && <p className="text-danger text-xs mt-1">{errors.full_name}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              شماره تماس <span className="text-red-500">*</span>
+              شماره تماس <span className="text-danger">*</span>
             </label>
             <input
               type="tel"
@@ -239,7 +239,7 @@ export function ApplicationForm() {
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)]"
               placeholder="مثال: 09123456789"
             />
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+            {errors.phone && <p className="text-danger text-xs mt-1">{errors.phone}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
@@ -270,7 +270,7 @@ export function ApplicationForm() {
                     onClick={() => setStep2({ ...step2, [q.id]: opt.value })}
                     className={`px-3 py-2 text-xs sm:text-sm rounded-lg border text-right transition-colors ${
                       step2[q.id] === opt.value
-                        ? "bg-[var(--color-brand-cta)] text-white border-[var(--color-brand-cta)]"
+                        ? "bg-[var(--color-brand-cta)] text-cta-contrast border-[var(--color-brand-cta)]"
                         : "bg-[var(--color-bg-base)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-brand-cta)]"
                     }`}
                   >
@@ -278,7 +278,7 @@ export function ApplicationForm() {
                   </button>
                 ))}
               </div>
-              {errors[q.id] && <p className="text-red-500 text-xs mt-1">{errors[q.id]}</p>}
+              {errors[q.id] && <p className="text-danger text-xs mt-1">{errors[q.id]}</p>}
             </div>
           ))}
         </div>
@@ -289,7 +289,7 @@ export function ApplicationForm() {
         <div className="flex flex-col gap-5">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              انگیزه شما از همکاری چیست؟ <span className="text-red-500">*</span>
+              انگیزه شما از همکاری چیست؟ <span className="text-danger">*</span>
             </label>
             <textarea
               value={step3.motivation}
@@ -298,7 +298,7 @@ export function ApplicationForm() {
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-cta)] resize-none h-28"
               placeholder="دلایل خود برای همکاری را بنویسید"
             />
-            {errors.motivation && <p className="text-red-500 text-xs mt-1">{errors.motivation}</p>}
+            {errors.motivation && <p className="text-danger text-xs mt-1">{errors.motivation}</p>}
           </div>
 
           {/* Mandatory fit assessment */}
@@ -317,7 +317,7 @@ export function ApplicationForm() {
                         onClick={() => setFitAnswers({ ...fitAnswers, [q.id]: opt.value })}
                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                           fitAnswers[q.id] === opt.value
-                            ? "bg-[var(--color-brand-cta)] text-white border-[var(--color-brand-cta)]"
+                            ? "bg-[var(--color-brand-cta)] text-cta-contrast border-[var(--color-brand-cta)]"
                             : "bg-[var(--color-bg-base)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-brand-cta)]"
                         }`}
                       >
@@ -328,14 +328,14 @@ export function ApplicationForm() {
                 </div>
               ))}
             </div>
-            {errors["fit_answers"] && <p className="text-red-500 text-xs mt-2">{errors["fit_answers"]}</p>}
+            {errors["fit_answers"] && <p className="text-danger text-xs mt-2">{errors["fit_answers"]}</p>}
           </div>
         </div>
       )}
       </div>
 
       {serverError && (
-        <p className="text-red-500 text-sm mt-4 text-center">{serverError}</p>
+        <p className="text-danger text-sm mt-4 text-center">{serverError}</p>
       )}
 
       {/* Navigation buttons */}
@@ -353,7 +353,7 @@ export function ApplicationForm() {
           <button
             type="button"
             onClick={nextStep}
-            className="px-6 py-2 rounded-lg bg-[var(--color-brand-cta)] text-white font-medium transition-opacity hover:opacity-90"
+            className="px-6 py-2 rounded-lg bg-[var(--color-brand-cta)] text-cta-contrast font-medium transition-opacity hover:opacity-90"
           >
             بعدی
           </button>
@@ -362,7 +362,7 @@ export function ApplicationForm() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-6 py-2 rounded-lg bg-[var(--color-success)] text-white font-medium transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="px-6 py-2 rounded-lg bg-[var(--color-success)] text-cta-contrast font-medium transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {submitting ? "در حال ارسال..." : "ثبت درخواست"}
           </button>

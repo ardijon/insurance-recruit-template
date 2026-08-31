@@ -72,20 +72,31 @@ export async function POST(request: NextRequest) {
     referralAgentName = ref?.agent_name ?? null;
   }
 
-  const result = await executeInsert(
-    `INSERT INTO applicants (full_name, phone, city, sales_background, network_size, availability, motivation, referral_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      full_name,
-      phone,
-      city || null,
-      JSON.stringify({ sales_experience, sales_result, leadership }),
-      String(network_size),
-      String(availability),
-      motivation || null,
-      referral_code || null,
-    ]
-  );
+  let result;
+  try {
+    result = await executeInsert(
+      `INSERT INTO applicants (full_name, phone, city, sales_background, network_size, availability, motivation, referral_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        full_name,
+        phone,
+        city || null,
+        JSON.stringify({ sales_experience, sales_result, leadership }),
+        String(network_size),
+        String(availability),
+        motivation || null,
+        referral_code || null,
+      ]
+    );
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("UNIQUE constraint")) {
+      return NextResponse.json(
+        { error: "این شماره تماس قبلاً ثبت شده است" },
+        { status: 409 }
+      );
+    }
+    throw err;
+  }
 
   const applicantId = Number(result.lastInsertRowid);
 

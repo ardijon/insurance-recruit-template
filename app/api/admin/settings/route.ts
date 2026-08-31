@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { selectAll, executeInsert, ensureSchema } from "@/lib/db";
 import { sanitizeUrl } from "@/lib/url";
+import { invalidateTelegramSettingsCache } from "@/lib/telegram";
 
 const SETTINGS_KEYS = [
   "TELEGRAM_BOT_TOKEN",
@@ -34,7 +36,10 @@ async function getSettings(): Promise<Record<string, string>> {
   return result;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     const settings = await getSettings();
     return NextResponse.json(settings);
@@ -44,6 +49,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: unknown;
   try {
     body = await request.json();
@@ -77,5 +85,6 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  invalidateTelegramSettingsCache();
   return NextResponse.json({ message: "تنظیمات ذخیره شد" });
 }

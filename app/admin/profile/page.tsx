@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setField("achievements", data.achievements.filter((_, i) => i !== idx))}
-                  className="shrink-0 flex size-7 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-500/10"
+                  className="shrink-0 flex size-7 items-center justify-center rounded-lg text-danger transition-colors hover:bg-danger/10"
                 >
                   <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -339,7 +339,7 @@ export default function ProfilePage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-brand-cta px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-brand-cta px-6 py-2.5 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
           </button>

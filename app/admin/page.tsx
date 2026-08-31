@@ -88,6 +88,7 @@ export default function AdminDashboard() {
   const [schedulingFor, setSchedulingFor] = useState<number | null>(null);
   const [calendarDate, setCalendarDate] = useState<string | null>(null);
   const [calendarTime, setCalendarTime] = useState<string | null>(null);
+  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [detailFor, setDetailFor] = useState<Applicant | null>(null);
@@ -169,6 +170,21 @@ export default function AdminDashboard() {
 
   const todayAppointments = applicants.filter((a) => a.appointment_jalali === todayJalaliStr()).length;
 
+  // Fetch already-booked slots for the selected date so they cannot be
+  // double-booked for another applicant. Cleared by openScheduler/save.
+  useEffect(() => {
+    if (schedulingFor === null || !calendarDate) return;
+    let cancelled = false;
+    adminFetch(`/api/appointments/booked-slots?date=${calendarDate}&exclude_id=${schedulingFor}`)
+      .then((res) => (res.ok ? res.json() : { times: [] }))
+      .then((data) => {
+        if (cancelled) return;
+        setBookedTimes(Array.isArray(data.times) ? data.times : []);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [schedulingFor, calendarDate]);
+
   function handleSort(field: SortField) {
     if (sortBy === field) {
       setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
@@ -196,6 +212,7 @@ export default function AdminDashboard() {
     setSchedulingFor(applicant.id);
     setCalendarDate(applicant.appointment_date ?? null);
     setCalendarTime(applicant.appointment_time ?? null);
+    setBookedTimes([]);
   }
 
   async function saveAppointment() {
@@ -212,7 +229,10 @@ export default function AdminDashboard() {
           appointment_time: calendarTime,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "");
+      }
       setApplicants((prev) =>
         prev.map((a) =>
           a.id === schedulingFor ? { ...a, appointment_date: calendarDate, appointment_time: calendarTime } : a,
@@ -222,8 +242,10 @@ export default function AdminDashboard() {
       setSchedulingFor(null);
       setCalendarDate(null);
       setCalendarTime(null);
-    } catch {
-      addToast("خطا در ثبت قرار", "error");
+      setBookedTimes([]);
+    } catch (err) {
+      const msg = err instanceof Error && err.message ? err.message : "خطا در ثبت قرار";
+      addToast(msg, "error");
     } finally {
       setSaving(false);
     }
@@ -304,8 +326,8 @@ export default function AdminDashboard() {
         <StatPill icon="agent" label="نماینده فعال" value={profile?.current_agent_count ?? null} color="brand-emphasis" />
       </div>
 
-      {/* Search + Filter bar — sticky under header on mobile */}
-      <div className="mb-4 sticky top-[57px] z-40 -mx-4 px-4 bg-bg-base/95 backdrop-blur-sm sm:static sm:bg-transparent sm:backdrop-blur-none sm:mx-0 sm:px-0">
+      {/* Search + Filter bar — sticky under mobile top bar */}
+      <div className="glass mb-4 sticky top-14 z-40 -mx-4 px-4 sm:static sm:bg-transparent sm:backdrop-blur-none sm:mx-0 sm:px-0">
         <FilterBar
           search={search}
           onSearchChange={handleSearchChange}
@@ -444,7 +466,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => handleDelete(applicant.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/10"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-danger transition-colors hover:bg-danger/10"
                   >
                     <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="3 6 5 6 21 6" />
@@ -530,10 +552,10 @@ export default function AdminDashboard() {
                   </svg>
                 </button>
               </div>
-              <JalaliCalendar selectedDate={calendarDate} selectedTime={calendarTime} onDateChange={setCalendarDate} onTimeChange={setCalendarTime} />
+              <JalaliCalendar selectedDate={calendarDate} selectedTime={calendarTime} onDateChange={setCalendarDate} onTimeChange={setCalendarTime} bookedTimes={bookedTimes} />
               <div className="mt-4 flex gap-3">
                 <button type="button" onClick={() => setSchedulingFor(null)} className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-bg-surface">انصراف</button>
-                <button type="button" onClick={saveAppointment} disabled={saving || !calendarDate} className="flex-1 rounded-xl bg-brand-cta px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+                <button type="button" onClick={saveAppointment} disabled={saving || !calendarDate} className="flex-1 rounded-xl bg-brand-cta px-4 py-3 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50">
                   {saving ? "در حال ذخیره..." : "ذخیره قرار"}
                 </button>
               </div>

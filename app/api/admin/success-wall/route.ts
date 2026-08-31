@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath } from "next/cache";
-import { selectAll, executeUpdate, executeInsert as execInsert, ensureSchema } from "@/lib/db";
+import { selectAll, executeUpdate, executeInsert as execInsert, updateSortOrders, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoSuccessWallEntries } from "@/lib/demo";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     if (isDemoMode()) {
       return NextResponse.json(getDemoSuccessWallEntries());
@@ -19,6 +23,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: {
     agent_name?: string;
     quote?: string;
@@ -65,6 +72,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { id?: number; agent_name?: string; quote?: string; images_json?: string; permission_granted?: boolean | number };
   try {
     body = await request.json();
@@ -98,6 +108,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { orders?: { id: number; sort_order: number }[] };
   try {
     body = await request.json();
@@ -112,9 +125,7 @@ export async function PUT(request: NextRequest) {
   await ensureSchema();
 
   try {
-    for (const { id, sort_order } of body.orders) {
-      await executeUpdate("UPDATE success_wall_entries SET sort_order = ? WHERE id = ?", [sort_order, id]);
-    }
+    await updateSortOrders("success_wall_entries", body.orders);
     revalidatePath("/");
     return NextResponse.json({ success: true });
   } catch {
@@ -123,6 +134,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) {

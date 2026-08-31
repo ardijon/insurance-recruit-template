@@ -13,23 +13,43 @@
 
 ## 3. Color Tokens
 
+All values verified against WCAG 2.1 AA (contrast ratios computed on the
+theme's own `bg-base` / component pairing). `cta-contrast` exists because
+white text on `brand-cta` fails AA in dark mode (4.06:1) — buttons use
+`text-cta-contrast` instead of `text-white`.
+
 | Token | Light | Dark | Usage |
 |---|---|---|---|
-| `bg-base` | `#F8F9FA` | `#0B1420` | Main page background |
-| `bg-surface` | `#EEF1F5` | `#111827` | Cards, alternating sections |
-| `text-primary` | `#111827` | `#F3F4F6` | Main body text |
-| `text-secondary` | `#6B7280` | `#9CA3AF` | Secondary text/descriptions |
-| `border` | `#D1D5DB` | `#1F2937` | Dividers, form borders |
-| `brand-emphasis` | `#0C4A6E` | `#6FA8DC` | Headers, emphasized text (manager profile heading) |
-| `brand-cta` | `#0369A1` | `#3B82C4` | Buttons, primary links, application-form CTA |
-| `accent` | `#E68A2E` | `#D9A94A` | High scores, success wall, achievement badges |
-| `success` | `#16A34A` | `#22C55E` | Confirmations, form-submission success message |
+| `bg-base` | `#FAF8F4` | `#0B1420` | Main page background |
+| `bg-surface` | `#F1EDE6` | `#111C2B` | Cards, alternating sections |
+| `text-primary` | `#1E1B16` (16.2:1) | `#F3F4F6` (15.6:1) | Main body text |
+| `text-secondary` | `#6B6459` (5.5:1) | `#9CA3AF` (7.3:1) | Secondary text/descriptions |
+| `border` | `#D6CFC2` | `#223047` | Dividers, form borders (decorative) |
+| `brand-emphasis` | `#1B3A4B` (11.3:1) | `#6FA8DC` (7.3:1) | Headers, emphasized text |
+| `brand-cta` | `#256079` (6.9:1 w/ white) | `#4A90D9` (5.5:1) | Buttons, primary links, form CTA |
+| `cta-contrast` | `#FFFFFF` | `#0B1420` | Text/icon color on `brand-cta` fills |
+| `accent` | `#8A5C13` (5.5:1) | `#D9A94A` (8.6:1) | High scores, success wall, badges |
+| `success` | `#15803D` (4.7:1) | `#22C55E` (8.1:1) | Confirmations, form success |
+| `danger` | `#B91C1C` (6.1:1) | `#F87171` (6.7:1) | Destructive actions, errors |
+| `shadow-card` | warm-tinted soft shadow | deep soft shadow | Elevation level 1 (cards) |
+| `shadow-pop` | larger, softer | deeper | Elevation level 2 (modals/menus) |
+| `.glass` utility | `bg-base` @ 78% + blur(12px) | same | Chrome surfaces only: sticky headers, filter bars |
+
+Content semantics (insurance recruitment): deep petrol/navy = trust &
+financial stability; warm ivory (not sterile white) = human warmth;
+gold accent = growth & achievement (success wall, badges); green =
+confirmation; restrained red = destructive without alarming.
 
 ## 4. Component Patterns
-- Buttons: `brand-cta` color, white/`text-primary` text depending on theme
-- Forms / inputs: 3-step form with progress bar (proposal §2.5), borders using the `border` token
-- Cards / tiles: `bg-surface` background — success wall grid (§2.2), manager profile card (§2.1)
-- Navigation: Sticky header with smooth-scroll links to page sections (Manager Profile, Success Wall, Growth Path, FAQ) and a prominent CTA button linking to `/apply`; dark-mode toggle lives in the header
+- Buttons: `brand-cta` fill + `cta-contrast` text/icon (never `text-white` — dark-mode AA), hover `opacity-90`, focus `ring-2 ring-brand-cta/40`
+- Destructive buttons: `bg-danger/10 text-danger hover:bg-danger/20` — never hard-coded red
+- Forms / inputs: 3-step form with progress bar (proposal §2.5), `bg-bg-base` fields on `bg-surface` cards, border `border`, focus `border-brand-cta` + `ring-brand-cta/30`, placeholders at `/70` opacity
+- Cards / tiles: `bg-surface` + `ring-1 ring-border/60` + `shadow-card` — dark mode keeps a subtle ring instead of heavy shadow
+- Elevation: 0 = `bg-base`, 1 = `bg-surface` + `shadow-card`, 2 = popover + `shadow-pop` + blur
+- Glass utility (`.glass`): reserved for chrome surfaces only — sticky headers, sticky filter bars, admin sidebar — never content containers (readability)
+- Aesthetic direction: minimal flat base + limited "Soft Glass" chrome + soft shadows; no neumorphism (fails contrast on principle)
+- Navigation (public): sticky glass header with smooth-scroll links (Manager Profile, Success Wall, Growth Path, FAQ, Location) + CTA; theme via admin-set class in `app/layout.tsx`
+- Navigation (admin): right-side grouped sidebar (RTL) — گروه‌های مدیریت / محتوای سایت / سیستم — bottom utility block (view site, password, logout, date, theme); mobile = slim top bar + bottom tab bar + "more" drawer with same grouping
 
 ## 5. Do-Not-Change List
 (empty for now — fill in after the first built version)

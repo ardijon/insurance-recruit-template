@@ -36,11 +36,13 @@ export default function AdminLayout({
   if (isLoginPage) return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-bg-base">
+    <div className="flex min-h-screen flex-col bg-bg-base md:flex-row">
       <AdminNav />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
-        {children}
-      </main>
+      <div className="min-w-0 flex-1">
+        <main className="mx-auto w-full max-w-5xl px-4 py-6 pb-24 md:pb-10">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

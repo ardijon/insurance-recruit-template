@@ -377,11 +377,11 @@ export function WalkthroughClient({
               <p className="text-sm text-text-secondary mb-4 text-center">مرحله ۱ از ۳: اطلاعات پایه</p>
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-text-primary mb-1">نام و نام خانوادگی <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-medium text-text-primary mb-1">نام و نام خانوادگی <span className="text-danger">*</span></label>
                   <div className="w-full rounded-lg border border-border bg-bg-base px-3 py-2 text-text-secondary text-sm">مثال: علی محمدی</div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-text-primary mb-1">شماره تماس <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-medium text-text-primary mb-1">شماره تماس <span className="text-danger">*</span></label>
                   <div className="w-full rounded-lg border border-border bg-bg-base px-3 py-2 text-text-secondary text-sm">مثال: 09123456789</div>
                 </div>
                 <div>

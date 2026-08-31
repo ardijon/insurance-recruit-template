@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath } from "next/cache";
-import { selectAll, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
+import { selectAll, executeInsert, executeUpdate, updateSortOrders, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoFaqItems } from "@/lib/demo";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     if (isDemoMode()) {
       return NextResponse.json(getDemoFaqItems());
@@ -19,6 +23,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { question?: string; answer?: string; sort_order?: number };
   try {
     body = await request.json();
@@ -47,6 +54,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { id?: number; question?: string; answer?: string };
   try {
     body = await request.json();
@@ -79,6 +89,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { orders?: { id: number; sort_order: number }[] };
   try {
     body = await request.json();
@@ -92,9 +105,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     await ensureSchema();
-    for (const { id, sort_order } of body.orders) {
-      await executeUpdate("UPDATE faq_items SET sort_order = ? WHERE id = ?", [sort_order, id]);
-    }
+    await updateSortOrders("faq_items", body.orders);
     revalidatePath("/");
     return NextResponse.json({ success: true });
   } catch {
@@ -103,6 +114,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) {

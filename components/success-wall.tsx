@@ -91,7 +91,7 @@ function SuccessCard({ entry, images, onImageClick }: { entry: SuccessWallEntry;
             </div>
           )}
           {images.length > 1 && (
-            <span className="absolute -bottom-1 -left-1 flex size-5 items-center justify-center rounded-full bg-brand-cta text-[10px] font-bold text-white shadow-sm">
+            <span className="absolute -bottom-1 -left-1 flex size-5 items-center justify-center rounded-full bg-brand-cta text-[10px] font-bold text-cta-contrast shadow-sm">
               {images.length}
             </span>
           )}

@@ -178,11 +178,11 @@ export default function SuccessWallPage() {
         <h1 className="text-2xl font-bold text-text-primary">دیوار موفقیت</h1>
         <div className="flex gap-2">
           {dirty && (
-            <button type="button" onClick={saveOrder} className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90">
+            <button type="button" onClick={saveOrder} className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90">
               ذخیره ترتیب جدید
             </button>
           )}
-          <button type="button" onClick={() => setShowForm(!showForm)} className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90">
+          <button type="button" onClick={() => setShowForm(!showForm)} className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90">
             {showForm ? "انصراف" : "افزودن"}
           </button>
         </div>
@@ -192,7 +192,7 @@ export default function SuccessWallPage() {
         <div className="mb-6 rounded-xl border border-border bg-bg-surface p-4 flex flex-col gap-3 animate-fade-in">
           <input type="text" value={agentName} onChange={(e) => setAgentName(e.target.value)} placeholder="نام نماینده" className="rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cta" />
           <textarea value={quote} onChange={(e) => setQuote(e.target.value)} placeholder="نقل قول" rows={2} className="rounded-lg border border-border bg-bg-base text-text-primary px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cta resize-none" />
-          <button type="button" onClick={handleAdd} disabled={!agentName.trim() || !quote.trim()} className="self-start rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={handleAdd} disabled={!agentName.trim() || !quote.trim()} className="self-start rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50">
             افزودن به دیوار
           </button>
         </div>
@@ -224,7 +224,7 @@ export default function SuccessWallPage() {
                       مجاز برای انتشار
                     </label>
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => handleEdit(e)} disabled={!editName.trim() || !editQuote.trim()} className="rounded-lg bg-success px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">ذخیره</button>
+                      <button type="button" onClick={() => handleEdit(e)} disabled={!editName.trim() || !editQuote.trim()} className="rounded-lg bg-success px-4 py-1.5 text-xs font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50">ذخیره</button>
                       <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-base">انصراف</button>
                     </div>
                   </div>
@@ -234,13 +234,13 @@ export default function SuccessWallPage() {
                       <div className="flex-1 min-w-0">
                         <button type="button" onClick={() => startEdit(e)} className="text-right font-bold text-text-primary hover:text-brand-cta transition-colors">{e.agent_name}</button>
                         <p className="mt-1 text-sm text-text-secondary line-clamp-2">{e.quote}</p>
-                        <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${e.permission_granted ? "bg-success/10 text-success" : "bg-red-500/10 text-red-500"}`}>
+                        <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${e.permission_granted ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
                           {e.permission_granted ? "مجاز برای انتشار" : "عدم مجوز"}
                         </span>
                       </div>
                       <div className="flex gap-2 shrink-0">
                         <button type="button" onClick={() => startEdit(e)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-base">ویرایش</button>
-                        <button type="button" onClick={() => handleDelete(e.id)} className="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-500 hover:text-white">حذف</button>
+                        <button type="button" onClick={() => handleDelete(e.id)} className="rounded-lg border border-danger/30 px-3 py-1.5 text-xs text-danger transition-colors hover:bg-danger hover:text-cta-contrast">حذف</button>
                       </div>
                     </div>
 
@@ -274,7 +274,7 @@ export default function SuccessWallPage() {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(e.id, img)}
-                                className="absolute top-0.5 left-0.5 size-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-0.5 left-0.5 size-5 flex items-center justify-center rounded-full bg-danger text-cta-contrast text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 ×
                               </button>

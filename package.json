@@ -1,6 +1,6 @@
 {
   "name": "insurance-recruit-template",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "npx tsx scripts/run-seed.ts",
+    "changelog": "npx tsx scripts/changelog.ts",
+    "release": "npx tsx scripts/release-dispatch.ts",
     "cf:build": "npx @opennextjs/cloudflare build",
     "cf:dev": "npx wrangler dev",
     "cf:deploy": "npx wrangler deploy"

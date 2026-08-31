@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   await ensureSchema();
   const row = await selectOne(
     "SELECT site_theme FROM manager_profile WHERE id = 1"
@@ -10,6 +14,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { theme?: string };
   try {
     body = await request.json();

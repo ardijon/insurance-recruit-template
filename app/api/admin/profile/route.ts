@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoProfile } from "@/lib/demo";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     if (isDemoMode()) {
       return NextResponse.json(getDemoProfile());
@@ -76,6 +80,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: {
     name?: string;
     title?: string;

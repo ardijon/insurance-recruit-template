@@ -19,15 +19,31 @@ interface JalaliCalendarProps {
   selectedTime: string | null;
   onDateChange: (isoDate: string) => void;
   onTimeChange: (time: string) => void;
+  /** بازه‌های زمانی که قبلاً برای متقاضی دیگری رزرو شده‌اند — قابل انتخاب نیستند */
+  bookedTimes?: string[];
 }
 
-const TIME_SLOTS = [
-  "۰۹:۰۰", "۱۰:۰۰", "۱۱:۰۰", "۱۲:۰۰",
-  "۱۳:۰۰", "۱۴:۰۰", "۱۵:۰۰", "۱۶:۰۰",
-  "۱۷:۰۰", "۱۸:۰۰", "۱۹:۰۰", "۲۰:۰۰",
-];
+const FA_DIGITS: Record<string, string> = {
+  "0": "۰", "1": "۱", "2": "۲", "3": "۳", "4": "۴",
+  "5": "۵", "6": "۶", "7": "۷", "8": "۸", "9": "۹",
+};
 
-export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTimeChange }: JalaliCalendarProps) {
+function toFaDigits(value: string): string {
+  return value.replace(/\d/g, (d) => FA_DIGITS[d] ?? d);
+}
+
+// بازه‌های نیم‌ساعته از ۹:۰۰ تا ۲۰:۳۰
+const TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 9; h <= 20; h++) {
+    for (const m of ["00", "30"]) {
+      slots.push(toFaDigits(`${String(h).padStart(2, "0")}:${m}`));
+    }
+  }
+  return slots;
+})();
+
+export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTimeChange, bookedTimes = [] }: JalaliCalendarProps) {
   const today = todayJalaliDate();
   const initiallySelected = selectedDate ? dateFromIso(selectedDate) : today;
   const [viewYear, setViewYear] = useState(initiallySelected?.year ?? today.year);
@@ -77,6 +93,7 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
   }
 
   function handleTimeClick(t: string) {
+    if (bookedTimes.includes(t)) return;
     setTime(t);
     onTimeChange(t);
   }
@@ -95,23 +112,36 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
               {formatJalali(jalaliToIso(selected))}
             </p>
           )}
+          <p className="text-[11px] text-text-secondary mt-0.5">بازه‌های نیم‌ساعته</p>
         </div>
         <div className="grid grid-cols-3 gap-2" dir="ltr">
-          {TIME_SLOTS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => handleTimeClick(t)}
-              className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
-                time === t
-                  ? "border-brand-cta bg-brand-cta text-white shadow-sm"
-                  : "border-border bg-bg-base text-text-primary hover:border-brand-cta"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+          {TIME_SLOTS.map((t) => {
+            const isBooked = bookedTimes.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => handleTimeClick(t)}
+                disabled={isBooked}
+                title={isBooked ? "این بازه قبلاً رزرو شده است" : undefined}
+                className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                  isBooked
+                    ? "border-border bg-bg-surface text-text-secondary/40 line-through cursor-not-allowed"
+                    : time === t
+                      ? "border-brand-cta bg-brand-cta text-cta-contrast shadow-sm"
+                      : "border-border bg-bg-base text-text-primary hover:border-brand-cta"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
+        {bookedTimes.length > 0 && (
+          <p className="mt-2 text-center text-[11px] text-text-secondary">
+            بازه‌های خط‌خورده قبلاً رزرو شده‌اند
+          </p>
+        )}
         <div className="mt-3 flex justify-between">
           <button
             type="button"
@@ -193,7 +223,7 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
               disabled={isPast}
               className={`relative rounded-lg py-2 text-sm font-medium transition-all ${
                 isSelected
-                  ? "bg-brand-cta text-white shadow-sm"
+                  ? "bg-brand-cta text-cta-contrast shadow-sm"
                   : isToday
                     ? "border border-accent text-accent"
                     : isPast
@@ -216,7 +246,7 @@ export function JalaliCalendar({ selectedDate, selectedTime, onDateChange, onTim
           <button
             type="button"
             onClick={() => setViewMode("times")}
-            className="rounded-lg bg-brand-cta px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            className="rounded-lg bg-brand-cta px-4 py-1.5 text-xs font-medium text-cta-contrast transition-opacity hover:opacity-90"
           >
             انتخاب ساعت
           </button>

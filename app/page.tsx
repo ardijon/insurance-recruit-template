@@ -7,11 +7,8 @@ import { SuccessWall, type SuccessWallEntry } from "@/components/success-wall";
 import { GrowthPath, type GrowthPathStage } from "@/components/growth-path";
 import { FaqSection, type FaqItem } from "@/components/faq-section";
 import { VisualStory } from "@/components/visual-story";
+import { LocationMap } from "@/components/location-map";
 import { unstable_cache } from "next/cache";
-
-function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === "true";
-}
 
 // Demo data for when database is not available (e.g. Netlify serverless)
 const DEMO_DATA = {
@@ -73,10 +70,10 @@ const getCachedData = unstable_cache(
   async () => {
     await ensureSchema();
     return Promise.all([
-      selectOne("SELECT * FROM manager_profile WHERE id = 1"),
-      selectAll("SELECT id, agent_name as agentName, quote, images_json FROM success_wall_entries WHERE permission_granted = 1 ORDER BY sort_order"),
-      selectAll("SELECT id, title, description FROM growth_path_stages ORDER BY sort_order"),
-      selectAll("SELECT id, question, answer FROM faq_items ORDER BY sort_order"),
+      selectOne("SELECT id, name, title, position_code, position_start_date, bio, achievements, current_agent_count, growth_agents_6m, growth_agents_1y, growth_agents_2y, growth_policies_6m, growth_policies_1y, growth_policies_2y, photo_url FROM manager_profile WHERE id = 1"),
+      selectAll("SELECT id, agent_name as agentName, quote, images_json FROM success_wall_entries WHERE permission_granted = 1 ORDER BY sort_order LIMIT 24"),
+      selectAll("SELECT id, title, description FROM growth_path_stages ORDER BY sort_order LIMIT 20"),
+      selectAll("SELECT id, question, answer FROM faq_items ORDER BY sort_order LIMIT 30"),
       selectOne("SELECT images_json FROM success_visual_story WHERE id = 1"),
     ]);
   },
@@ -85,8 +82,6 @@ const getCachedData = unstable_cache(
 );
 
 export default async function HomePage() {
-  const demo = isDemoMode();
-
   let profileRaw: Record<string, unknown> | undefined;
   let successEntriesRaw: Record<string, unknown>[] = [];
   let growthStagesRaw: Record<string, unknown>[] = [];
@@ -146,7 +141,7 @@ export default async function HomePage() {
     (r) => ({ id: Number(r.id), question: String(r.question), answer: String(r.answer) })
   );
 
-  let visualStoryImagesFinal: string[] = visualStoryImages;
+  const visualStoryImagesFinal: string[] = visualStoryImages;
 
   const growthStats: GrowthStat[] = [];
   if (profile?.growth_agents_6m != null) growthStats.push({ value: profile.growth_agents_6m, label: "نمایندگان", period: "شش ماه" });
@@ -200,6 +195,8 @@ export default async function HomePage() {
         <AnimateOnShow>
           <FaqSection items={faqItems} />
         </AnimateOnShow>
+
+        <LocationMap />
       </main>
       <Footer />
     </>

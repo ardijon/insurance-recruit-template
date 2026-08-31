@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath } from "next/cache";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
 import { writeFile, mkdir, unlink } from "fs/promises";
@@ -13,6 +14,9 @@ const MAX_SIZE = 5 * 1024 * 1024;
 const UPLOAD_DIR = join(process.cwd(), "public", "uploads");
 
 export async function POST(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     const formData = await request.formData();
     const file = formData.get("photo") as File | null;

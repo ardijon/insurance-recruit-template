@@ -57,7 +57,7 @@ export function Pagination({ page, total, limit, onChange }: Props) {
               onClick={() => onChange(p)}
               className={`flex size-8 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                 p === page
-                  ? "bg-brand-cta text-white"
+                  ? "bg-brand-cta text-cta-contrast"
                   : "border border-border text-text-secondary hover:bg-bg-surface"
               }`}
             >

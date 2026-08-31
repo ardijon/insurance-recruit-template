@@ -9,17 +9,18 @@ const NAV_ITEMS = [
   { href: "#success-wall", label: "موفقیت‌ها" },
   { href: "#growth-path", label: "مسیر رشد" },
   { href: "#faq", label: "پرسش‌های متداول" },
+  { href: "#location", label: "آدرس روی نقشه" },
 ];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-bg-base/80 backdrop-blur-md">
+    <header className="glass sticky top-0 z-50 border-b border-border">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link
           href="/apply"
-          className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-white no-underline transition-opacity hover:opacity-90"
+          className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast no-underline transition-opacity hover:opacity-90"
         >
           درخواست نمایندگی
         </Link>

@@ -1,0 +1,62 @@
+name: Release — publish changelog & notify buyers
+
+# گردش کار مالک محصول: بعد از تگ‌زدن نسخه (v1.2.0) و push، این workflow:
+#   1) releases.json را از CHANGELOG.md می‌سازد
+#   2) آن را در ریپوی «عمومی» releases منتشر می‌کند (فقط متادیتا، نه کد)
+#   3) رویداد template-update را به کل ریپوهای خریداران (customers.json)
+#      می‌فرستد تا کلون‌هایشان فوری sync شوند
+#
+# سکرت‌های مورد نیاز در این ریپو (مالک):
+#   RELEASES_TOKEN  — PAT با دسترسی contents:write به ریپوی عمومی releases
+#   DISPATCH_TOKEN  — PAT با دسترسی به ریپوهای خریداران (برای dispatch)
+# سکرت RELEASES_REPO مسیر ریپوی عمومی است، مثلا my-org/insurance-recruit-releases
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build releases.json
+        run: npx tsx scripts/changelog.ts
+
+      - name: Publish changelog to public releases repo
+        env:
+          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          RELEASES_REPO: ${{ secrets.RELEASES_REPO }}
+        run: |
+          if [ -z "$RELEASES_TOKEN" ] || [ -z "$RELEASES_REPO" ]; then
+            echo "سکرت‌های انتشار تنظیم نشده‌اند — فقط releases.json محلی ساخته شد"
+            exit 0
+          fi
+          git config user.name "release-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git clone "https://x-access-token:${RELEASES_TOKEN}@github.com/${RELEASES_REPO}.git" out
+          cp releases.json out/releases.json
+          cd out
+          git add releases.json
+          git diff --cached --quiet || git commit -m "changelog $(date -u +%F)"
+          git push
+
+      - name: Dispatch template-update to buyer repos
+        env:
+          DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$DISPATCH_TOKEN" ] || [ ! -f customers.json ]; then
+            echo "dispatch انجام نشد — سکرت یا customers.json موجود نیست"
+            exit 0
+          fi
+          export GITHUB_TOKEN="$DISPATCH_TOKEN"
+          npx tsx scripts/release-dispatch.ts

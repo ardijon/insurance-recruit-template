@@ -44,6 +44,12 @@ async function getTelegramSettings(): Promise<{ token: string | undefined; chatI
 
 const TELEGRAM_API = "https://api.telegram.org";
 
+// Call after saving new Telegram settings so the 5-minute cache doesn't keep
+// serving the old token/chat id.
+export function invalidateTelegramSettingsCache(): void {
+  cachedSettings = null;
+}
+
 export async function notifyManagerOnTelegram(
   applicant: ApplicantNotification
 ): Promise<boolean> {

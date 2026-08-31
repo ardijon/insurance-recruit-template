@@ -68,7 +68,7 @@ const AccordionItem = memo(function AccordionItem({
         className="flex w-full items-center gap-4 px-5 py-4 text-right transition-colors hover:bg-bg-surface/50"
       >
         {/* Icon */}
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-cta text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-cta text-cta-contrast shadow-sm transition-transform duration-300 group-hover:scale-105">
           <IconComponent className="size-5" />
         </div>
 

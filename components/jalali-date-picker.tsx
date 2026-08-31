@@ -257,7 +257,7 @@ export function JalaliDatePicker({ value, onChange, placeholder }: JalaliDatePic
               <button
                 type="button"
                 onClick={() => { onChange(""); setOpen(false); }}
-                className="text-xs text-red-500 hover:text-red-600 transition-colors"
+                className="text-xs text-danger hover:text-danger transition-colors"
               >
                 پاک کردن تاریخ
               </button>

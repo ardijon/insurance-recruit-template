@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
     throw err;
   }
 
-    return NextResponse.json(
-      { message: "لینک معرف ساخته شد", code },
-      { status: 201 },
-    );
+  return NextResponse.json(
+    { message: "لینک ارجاع ثبت شد", code },
+    { status: 201 },
+  );
 }

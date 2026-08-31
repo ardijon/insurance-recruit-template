@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let body: { password?: string; new_password?: string; reset_code?: string; passwordless?: boolean };
+  let body: { password?: string; new_password?: string; reset_code?: string };
   try {
     body = await request.json();
   } catch {
@@ -43,12 +43,7 @@ export async function POST(request: NextRequest) {
   if (!demo) {
     const passwordConfigured = await isPasswordSet();
 
-    // Passwordless login: allow login without password if no password is set
-    // or if the user explicitly requests passwordless login
-    if (body.passwordless === true || (!passwordConfigured && !body.password && !body.reset_code)) {
-      // Passwordless login allowed - no password verification needed
-      // This enables flexible authentication as requested
-    } else if (body.reset_code !== undefined) {
+    if (body.reset_code !== undefined) {
       // Forgot-password reset: must present a valid Telegram-sent reset code.
       const newPassword = body.new_password ?? "";
       if (!newPassword || newPassword.length < 6) {
@@ -80,9 +75,9 @@ export async function POST(request: NextRequest) {
         { error: "رمز عبور اشتباه است" },
         { status: 401 },
       );
-    } else if (!body.password && !body.passwordless) {
+    } else if (!body.password) {
       return NextResponse.json(
-        { error: "رمز عبور الزامی است یا گزینه ورود بدون رمز را فعال کنید" },
+        { error: "رمز عبور الزامی است" },
         { status: 401 },
       );
     }

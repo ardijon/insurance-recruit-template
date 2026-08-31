@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath } from "next/cache";
 import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   await ensureSchema();
   const row = await selectOne(
     "SELECT images_json FROM success_visual_story WHERE id = 1"
@@ -11,6 +15,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   let body: { images_json?: string };
   try {
     body = await request.json();
