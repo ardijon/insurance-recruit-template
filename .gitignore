@@ -79,3 +79,7 @@ Insurance
 .wrangler/
 .dev.vars
 .open-next/
+
+# graphify tool artifacts (dated snapshots + AST cache)
+graphify-out/2026-*/
+graphify-out/cache/ast/

@@ -28,6 +28,16 @@ export async function GET(request: NextRequest) {
       page: Number(searchParams.get("page")) || 1,
       limit: Number(searchParams.get("limit")) || 20,
     });
+    // Sandbox applicants submitted by this visitor via /apply (session cookie)
+    try {
+      const sandbox = JSON.parse(request.cookies.get("sandbox_applicants")?.value ?? "[]");
+      if (Array.isArray(sandbox) && sandbox.length > 0) {
+        result.data = [...sandbox, ...result.data];
+        result.total += sandbox.length;
+      }
+    } catch {
+      /* invalid cookie — ignore */
+    }
     return NextResponse.json(result);
   }
 

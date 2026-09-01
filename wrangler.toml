@@ -10,6 +10,9 @@ binding = "ASSETS"
 
 [vars]
 DEMO_MODE = "true"
+DEMO_OPEN_ADMIN = "true"
 
 [build]
-command = "npx @opennextjs/cloudflare build"
+# فقط در دیپلوی دمو (OBFUSCATE_DEMO=1 از scripts/deploy-demo.mjs) مبهم‌سازی
+# اجرا می‌شود؛ دیپلوی خریداران همان build استاندارد را می‌گیرند.
+command = "npx @opennextjs/cloudflare build && node scripts/obfuscate-demo.mjs"

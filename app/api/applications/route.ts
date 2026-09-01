@@ -52,15 +52,46 @@ export async function POST(request: NextRequest) {
 
   // Demo mode: never persist — return a realistic mock success instead.
   if (isDemoMode()) {
-    return NextResponse.json(
+    // Demo sandbox: persist into a per-visitor session cookie so the new
+    // applicant shows up in /admin for this visitor (no real DB in demo).
+    const SANDBOX_COOKIE = "sandbox_applicants";
+    let existing: Record<string, unknown>[] = [];
+    try {
+      existing = JSON.parse(request.cookies.get(SANDBOX_COOKIE)?.value ?? "[]");
+      if (!Array.isArray(existing)) existing = [];
+    } catch {
+      existing = [];
+    }
+    const demoApplicant = {
+      id: Date.now(),
+      full_name,
+      phone,
+      city: city || "",
+      score: totalScore,
+      status: "new",
+      created_at: new Date().toISOString().slice(0, 10),
+      appointment_date: null,
+      appointment_jalali: null,
+      appointment_time: null,
+      referral_code: referral_code || "",
+    };
+    const list = [demoApplicant, ...existing].slice(0, 5);
+
+    const res = NextResponse.json(
       {
-        id: 0,
+        id: demoApplicant.id,
         score: totalScore,
         fitScore: fitResult.fitScore,
         message: "با موفقیت ثبت شد",
       },
       { status: 201 },
     );
+    res.cookies.set(SANDBOX_COOKIE, JSON.stringify(list), {
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+    return res;
   }
 
   let referralAgentName: string | null = null;

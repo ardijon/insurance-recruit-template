@@ -15,13 +15,17 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [passwordSet, setPasswordSet] = useState(true);
+  const [demoOpen, setDemoOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("login");
   const router = useRouter();
 
   useEffect(() => {
     fetch("/api/admin/login")
       .then((r) => r.json())
-      .then((d) => setPasswordSet(!!d.passwordSet))
+      .then((d) => {
+        setPasswordSet(!!d.passwordSet);
+        setDemoOpen(!!d.demoOpen);
+      })
       .catch(() => setPasswordSet(true))
       .finally(() => setChecking(false));
   }, []);
@@ -102,6 +106,28 @@ export default function AdminLoginPage() {
 
   const isRecover = mode === "reset";
   const isSetting = !isRecover && !passwordSet && mode === "login";
+  const showDemoLogin = demoOpen && mode === "login";
+
+  async function handleDemoLogin() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demo: true }),
+      });
+      if (!res.ok) {
+        setError("خطا در ورود آزمایشی");
+        return;
+      }
+      router.push("/admin");
+    } catch {
+      setError("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const title = mode === "request" || mode === "reset"
     ? "بازیابی رمز عبور"
@@ -133,6 +159,29 @@ export default function AdminLoginPage() {
           {checking ? (
             <div className="flex justify-center py-4">
               <div className="size-6 animate-spin rounded-full border-2 border-brand-cta border-t-transparent" />
+            </div>
+          ) : showDemoLogin ? (
+            <div className="flex flex-col gap-4">
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={loading}
+                className="w-full rounded-lg bg-brand-cta px-4 py-3 text-sm font-medium text-cta-contrast transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {loading ? "در حال ورود..." : "ورود آزمایشی به پنل مدیریت"}
+              </button>
+              <p className="text-center text-xs leading-relaxed text-text-secondary">
+                این نسخه نمایشی است و با داده فرضی کار می‌کند — بدون رمز عبور وارد شوید.
+              </p>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setError(""); setMode("request"); }}
+                  className="text-xs font-medium text-text-secondary hover:text-brand-cta transition-colors"
+                >
+                  بازیابی رمز عبور
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
