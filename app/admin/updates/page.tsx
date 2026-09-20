@@ -156,7 +156,7 @@ export default function UpdatesPage() {
             که سازنده محصول پس از هر انتشار منتشر می‌کند تنظیم کنید.
           </p>
         </div>
-      ) : info?.error ? (
+      ) : info?.error && (info?.releases.length ?? 0) === 0 ? (
         <div className="rounded-2xl border border-border bg-bg-surface p-6 text-sm text-danger">
           خطا در دریافت لیست تغییرات — اتصال اینترنت یا آدرس فید را بررسی کنید.
         </div>
@@ -166,15 +166,18 @@ export default function UpdatesPage() {
         </div>
       ) : (
         <>
+          {info!.error && (
+            <div className="mb-4 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-xs leading-relaxed text-danger">
+              فید راه‌دور در دسترس نیست — لیست تغییرات همراه نصب نمایش داده شده است.
+            </div>
+          )}
           {newReleases.length > 0 && !info!.deployHookConfigured && (
             <div className="mb-4 rounded-xl border border-border bg-bg-surface px-4 py-3">
-              <p className="text-sm font-medium text-text-primary">نصب روی سرور شخصی (VPS)</p>
+              <p className="text-sm font-medium text-text-primary">راهنمای نصب نسخه جدید</p>
               <p className="mt-1 text-xs leading-relaxed text-text-secondary">
-                با اتصال SSH به سرور، دستور زیر را اجرا کنید:
+                سرور شخصی (VPS): با SSH دستور
                 <code className="mx-1 rounded bg-bg-base px-1.5 py-0.5 text-xs" dir="ltr">bash scripts/update.sh</code>
-                (هاست‌های Vercel/Cloudflare می‌توانند
-                <code className="mx-1 rounded bg-bg-base px-1.5 py-0.5 text-xs" dir="ltr">UPDATE_DEPLOY_HOOK_URL</code>
-                را برای دکمه «نصب نسخه جدید» تنظیم کنند.)
+                را اجرا کنید. Cloudflare/Vercel: برای نصب، آخرین نسخه را از فروشنده بخواهید.
               </p>
             </div>
           )}
@@ -212,7 +215,7 @@ export default function UpdatesPage() {
                       جدید
                     </span>
                   )}
-                  {isNewer(release.version, info!.currentVersion) && (
+                  {info!.deployHookConfigured && isNewer(release.version, info!.currentVersion) && (
                     <span className="text-[10px] text-text-secondary">— برای دریافت، «نصب نسخه جدید» را بزنید</span>
                   )}
                 </div>

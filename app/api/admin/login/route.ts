@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionValue, SESSION_COOKIE, verifyPassword, isPasswordSet, setPassword } from "@/lib/auth";
+import { createSessionValue, SESSION_COOKIE, CSRF_COOKIE, CSRF_MAX_AGE, newCsrfToken, verifyPassword, isPasswordSet, setPassword } from "@/lib/auth";
 import { checkRateLimit, getRateLimitKey, resetRateLimit } from "@/lib/rate-limit";
 import { ensureSchema } from "@/lib/db";
 import { isDemoMode } from "@/lib/demo";
@@ -111,6 +111,15 @@ export async function POST(request: NextRequest) {
     sameSite: "strict",
     path: "/",
     maxAge: 60 * 60 * 24,
+  });
+  // Issue the double-submit CSRF cookie alongside the session so adminFetch
+  // can mirror it into x-csrf-token on mutating requests (see admin-guard).
+  response.cookies.set(CSRF_COOKIE, newCsrfToken(), {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: CSRF_MAX_AGE,
   });
 
   return response;

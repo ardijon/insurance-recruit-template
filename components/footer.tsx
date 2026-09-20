@@ -10,7 +10,12 @@ interface SocialLinks {
   SOCIAL_INSTAGRAM: string;
 }
 
-export function Footer() {
+// Brand label comes from the manager profile (name + title) and is passed
+// in from the home page. Falls back to the generic label when the profile
+// is empty, so it stays correct for every management level.
+// storeUrl: optional env-driven credit link (STORE_URL) — when set, a faint
+// second line appears in the footer pointing to the product store.
+export function Footer({ brandLabel, storeUrl }: { brandLabel?: string; storeUrl?: string }) {
   const [social, setSocial] = useState<SocialLinks>({
     SOCIAL_TELEGRAM: "",
     SOCIAL_WHATSAPP: "",
@@ -33,7 +38,7 @@ export function Footer() {
           {/* Brand */}
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             <ShieldIcon className="size-4 text-accent" />
-            <span>سایت اختصاصی مدیر فروش بیمه عمر</span>
+            <span>{brandLabel || "سایت اختصاصی مدیر فروش بیمه عمر"}</span>
           </div>
 
           {/* Social Links */}
@@ -84,6 +89,19 @@ export function Footer() {
 
         <p className="mt-4 text-center text-xs text-text-secondary md:text-left">
           تمامی حقوق محفوظ است &copy; {new Date().getFullYear()}
+          {storeUrl && (
+            <>
+              {" · "}
+              <a
+                href={`${storeUrl.replace(/\/+$/, "")}?utm_source=footer&utm_medium=referral`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text-secondary/60 transition-colors hover:text-brand-cta"
+              >
+                طراحی و پشتیبانی
+              </a>
+            </>
+          )}
         </p>
       </div>
     </footer>

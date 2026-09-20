@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { ToastContainer } from "@/components/toast";
 import type { Toast } from "@/hooks/use-toast";
 import { adminFetch } from "@/lib/api-client";
@@ -107,7 +106,7 @@ export default function VisualStoryPage() {
           {images.map((img, idx) => (
             <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-bg-surface">
               <button type="button" onClick={() => setLightboxIdx(idx)} className="size-full">
-                <Image src={img} alt="" fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" className="object-cover" />
+                <img src={img} alt="" className="absolute inset-0 size-full object-cover" />
               </button>
               <button
                 type="button"
@@ -127,8 +126,8 @@ export default function VisualStoryPage() {
 
       {/* Lightbox */}
       {lightboxIdx !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={() => setLightboxIdx(null)}>
-          <button type="button" onClick={() => setLightboxIdx(null)} className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-bg-base/95 backdrop-blur-md" onClick={() => setLightboxIdx(null)}>
+          <button type="button" onClick={() => setLightboxIdx(null)} className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-black/10 text-text-primary hover:bg-black/20 transition-colors">
             <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -136,17 +135,21 @@ export default function VisualStoryPage() {
           </button>
           {images.length > 1 && (
             <>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIdx((p) => p !== null ? (p > 0 ? p - 1 : images.length - 1) : null); }} className="absolute right-4 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
-                <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+              <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIdx((p) => p !== null ? (p > 0 ? p - 1 : images.length - 1) : null); }} className="hidden md:flex absolute left-6 top-1/2 -translate-y-1/2 z-10 size-11 items-center justify-center rounded-full bg-black/8 text-text-primary/70 hover:bg-black/15 transition-all">
+                <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIdx((p) => p !== null ? (p < images.length - 1 ? p + 1 : 0) : null); }} className="absolute left-4 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
-                <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+              <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIdx((p) => p !== null ? (p < images.length - 1 ? p + 1 : 0) : null); }} className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 z-10 size-11 items-center justify-center rounded-full bg-black/8 text-text-primary/70 hover:bg-black/15 transition-all">
+                <svg className="size-6 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
             </>
           )}
-          <Image src={images[lightboxIdx]} alt="" width={1200} height={800} unoptimized className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
-            {lightboxIdx + 1} / {images.length}
+          <div className="flex-1 flex items-center justify-center px-4 overflow-hidden">
+            <img src={images[lightboxIdx]} alt="" className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-lg" onClick={(e) => e.stopPropagation()} draggable={false} />
+          </div>
+          <div className="pb-6 pt-2">
+            <span className="inline-block rounded-full bg-black/10 px-4 py-1.5 text-sm font-medium text-text-primary backdrop-blur-sm">
+              {lightboxIdx + 1} / {images.length}
+            </span>
           </div>
         </div>
       )}

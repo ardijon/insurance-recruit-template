@@ -162,7 +162,7 @@ export default function ProfilePage() {
             <div className="shrink-0">
               <div className="size-20 overflow-hidden rounded-full border-2 border-border bg-bg-base">
                 {data.photo_url ? (
-                  <Image src={data.photo_url} alt="profile" width={80} height={80} className="size-full object-cover" />
+                  <img src={data.photo_url} alt="profile" className="size-full object-cover" />
                 ) : (
                   <div className="flex size-full items-center justify-center text-text-secondary text-sm">بدون عکس</div>
                 )}

@@ -269,7 +269,7 @@ export default function SuccessWallPage() {
                           {images.map((img, i) => (
                             <div key={i} className="relative group size-20 overflow-hidden rounded-lg border border-border">
                               <button type="button" onClick={() => setLightboxImg(img)} className="size-full">
-                                <Image src={img} alt="" width={80} height={80} className="size-full object-cover" loading="lazy" />
+                                <img src={img} alt="" className="size-full object-cover" loading="lazy" />
                               </button>
                               <button
                                 type="button"
@@ -293,11 +293,11 @@ export default function SuccessWallPage() {
 
       {/* Lightbox */}
       {lightboxImg && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setLightboxImg(null)}>
-          <button type="button" onClick={() => setLightboxImg(null)} className="absolute top-4 left-4 size-10 flex items-center justify-center rounded-full bg-white/10 text-white text-lg hover:bg-white/20 transition-colors">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bg-base/95 backdrop-blur-md" onClick={() => setLightboxImg(null)}>
+          <button type="button" onClick={() => setLightboxImg(null)} className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-black/10 text-text-primary text-lg hover:bg-black/20 transition-colors">
             ×
           </button>
-          <Image src={lightboxImg} alt="" width={1200} height={800} unoptimized className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <img src={lightboxImg} alt="" className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-lg" onClick={(e) => e.stopPropagation()} draggable={false} />
         </div>
       )}
 

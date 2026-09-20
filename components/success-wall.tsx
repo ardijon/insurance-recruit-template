@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { QuoteIcon } from "@/components/icons";
 import { Lightbox } from "@/components/lightbox";
 
@@ -75,12 +74,10 @@ function SuccessCard({ entry, images, onImageClick }: { entry: SuccessWallEntry;
               onClick={() => onImageClick(images[0])}
               className="relative size-16 overflow-hidden rounded-full ring-3 ring-accent/20 transition-all group-hover:ring-accent/40 group-hover:scale-105"
             >
-              <Image
+              <img
                 src={images[0]}
                 alt={entry.agentName}
-                fill
-                sizes="64px"
-                className="object-cover"
+                className="absolute inset-0 size-full object-cover"
               />
             </button>
           ) : (
@@ -116,13 +113,11 @@ function SuccessCard({ entry, images, onImageClick }: { entry: SuccessWallEntry;
                 onClick={() => onImageClick(img)}
                 className="relative size-12 shrink-0 overflow-hidden rounded-lg ring-1 ring-border transition-all hover:ring-accent/50 hover:scale-105"
               >
-                <Image
+                <img
                   src={img}
                   alt=""
-                  fill
-                  sizes="48px"
-                  className="object-cover"
                   loading="lazy"
+                  className="absolute inset-0 size-full object-cover"
                 />
               </button>
             ))}

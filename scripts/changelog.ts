@@ -1,10 +1,11 @@
 // scripts/changelog.ts — تبدیل CHANGELOG.md به releases.json برای خریداران
 //
 // گردش کار مالک محصول پس از هر انتشار:
-//   npm run changelog     → releases.json را می‌سازد
-//   سپس فایل تولیدشده را در مکان عمومی منتشر کنید (مثلاً ریپوی عمومی
-//   releases یا هر هاست https) — خریداران UPDATE_CHANGELOG_URL را به همان
-//   آدرس pointing کرده‌اند. فرمت خروجی همان چیزی است که lib/update-center.ts می‌خواند.
+//   npm run changelog     → releases.json را از CHANGELOG.md می‌سازد
+// این فایل همراه هر نصب bundle می‌شود، پس صفحه به‌روزرسانی خریدار همیشه
+// تغییرات همان نسخه را نشان می‌دهد. فقط اگر بخواهید نصب‌های قدیمی از انتشار
+// جدید باخبر شوند، همین فایل را در یک آدرس عمومی (ریپوی عمومی releases یا
+// فروشگاه) منتشر کنید و UPDATE_CHANGELOG_URL دیپلوی‌ها را به آن بدهید.
 //
 // Usage: npm run changelog [-- out/releases.json]
 

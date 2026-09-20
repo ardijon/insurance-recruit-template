@@ -105,6 +105,8 @@ export default async function HomePage() {
     visualStoryImages = DEMO_DATA.visualStoryImages;
   }
 
+  // NOTE: upload key resolution is done client-side via /api/uploads/[...key]
+
   const profile = profileRaw as
     | {
         name: string;
@@ -198,7 +200,10 @@ export default async function HomePage() {
 
         <LocationMap />
       </main>
-      <Footer />
+      <Footer
+        brandLabel={profile?.name?.trim() ? `سایت اختصاصی ${profile.name.trim()}` : undefined}
+        storeUrl={process.env.STORE_URL?.trim() || undefined}
+      />
     </>
   );
 }

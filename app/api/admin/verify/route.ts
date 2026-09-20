@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionValue, SESSION_COOKIE } from "@/lib/auth";
+import { verifySessionValue, SESSION_COOKIE, CSRF_COOKIE, CSRF_MAX_AGE, newCsrfToken } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 
 export async function GET(request: NextRequest) {
@@ -14,5 +14,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  return NextResponse.json({ authenticated: true });
+  // Self-heal: reissue the CSRF cookie when missing so mutating admin
+  // requests keep passing the double-submit check after cookie wipes.
+  const response = NextResponse.json({ authenticated: true });
+  if (!request.cookies.get(CSRF_COOKIE)?.value) {
+    response.cookies.set(CSRF_COOKIE, newCsrfToken(), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: CSRF_MAX_AGE,
+    });
+  }
+  return response;
 }

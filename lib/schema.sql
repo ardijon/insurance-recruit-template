@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS applicants (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_applicants_phone ON applicants(phone);
 CREATE INDEX IF NOT EXISTS idx_applicants_status ON applicants(status);
 CREATE INDEX IF NOT EXISTS idx_applicants_score ON applicants(score);
 CREATE INDEX IF NOT EXISTS idx_applicants_created_at ON applicants(created_at);

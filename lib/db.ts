@@ -1,12 +1,39 @@
 // lib/db.ts
 //
-// Dual-mode database layer:
-//   - If TURSO_URL is set → uses Turso (cloud SQLite) for Vercel/serverless
-//   - Otherwise → falls back to local node:sqlite for self-hosted deployments
+// Triple-mode database layer (priority order):
+//   1. Cloudflare D1 (Workers production) — via getCloudflareContext().env.DB
+//   2. Turso (cloud SQLite) — if TURSO_DATABASE_URL is set
+//   3. Local node:sqlite — self-hosted / dev fallback
 //
 // edge.md §2: each deployment has its own independent database.
 
 import type { Client } from "@libsql/client";
+
+// ---------------------------------------------------------------------------
+// D1 client (Cloudflare Workers production)
+// ---------------------------------------------------------------------------
+
+interface D1PreparedStatement {
+  bind(...args: unknown[]): D1PreparedStatement;
+  all(): Promise<{ results?: Record<string, unknown>[] }>;
+  run(): Promise<{ meta?: { changes?: number; last_row_id?: number } }>;
+}
+
+interface D1Database {
+  prepare(sql: string): D1PreparedStatement;
+  batch(statements: D1PreparedStatement[]): Promise<unknown[]>;
+}
+
+async function getD1(): Promise<D1Database | null> {
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const ctx = getCloudflareContext({ async: false });
+    const db = (ctx.env as Record<string, unknown>).DB as D1Database | undefined;
+    return db ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Turso client (cloud mode) — dynamic import to avoid native binary install
@@ -98,10 +125,37 @@ function isTurso(): boolean {
   return !!process.env.TURSO_DATABASE_URL;
 }
 
+function normalizeArgs(args?: (string | number | null)[]): unknown[] {
+  return (args ?? []).map((a) => a);
+}
+
+async function runD1(
+  sql: string,
+  args?: (string | number | null)[]
+): Promise<QueryResult> {
+  const db = await getD1();
+  if (!db) throw new Error("D1 binding not available");
+  const upperSql = sql.trim().toUpperCase();
+  const stmt = db.prepare(sql).bind(...normalizeArgs(args));
+  if (upperSql.startsWith("SELECT") || upperSql.startsWith("PRAGMA")) {
+    const { results } = await stmt.all();
+    return { rows: (results ?? []) as DbRow[], rowsAffected: 0, lastInsertRowid: 0 };
+  }
+  const { meta } = await stmt.run();
+  return {
+    rows: [],
+    rowsAffected: meta?.changes ?? 0,
+    lastInsertRowid: meta?.last_row_id ?? 0,
+  };
+}
+
 export async function execute(
   sql: string,
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
+  if (await getD1()) {
+    return runD1(sql, args);
+  }
   if (isTurso()) {
     const client = await getTursoClient();
     const result = await client.execute({
@@ -138,6 +192,9 @@ export async function executeInsert(
   sql: string,
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
+  if (await getD1()) {
+    return runD1(sql, args);
+  }
   if (isTurso()) {
     const client = await getTursoClient();
     const result = await client.execute({
@@ -166,6 +223,9 @@ export async function executeUpdate(
   sql: string,
   args?: (string | number | null)[]
 ): Promise<QueryResult> {
+  if (await getD1()) {
+    return runD1(sql, args);
+  }
   if (isTurso()) {
     const client = await getTursoClient();
     const result = await client.execute({
@@ -237,7 +297,117 @@ export async function ensureSchema(): Promise<void> {
   if (schemaReady) return;
   schemaReady = true;
 
-  if (isTurso()) {
+  const d1 = await getD1();
+  if (d1) {
+    // D1: same SQLite dialect as Turso/local. Statements run one at a time
+    // because D1 batch() rejects mixed read/write batches.
+    const statements = [
+      `CREATE TABLE IF NOT EXISTS manager_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        name TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL DEFAULT '',
+        position_code TEXT NOT NULL DEFAULT '',
+        position_start_date TEXT NOT NULL DEFAULT '',
+        bio TEXT NOT NULL DEFAULT '',
+        achievements TEXT NOT NULL DEFAULT '',
+        current_agent_count INTEGER NOT NULL DEFAULT 0,
+        growth_agents_6m INTEGER,
+        growth_agents_1y INTEGER,
+        growth_agents_2y INTEGER,
+        growth_policies_6m INTEGER,
+        growth_policies_1y INTEGER,
+        growth_policies_2y INTEGER,
+        site_theme TEXT NOT NULL DEFAULT 'warm',
+        photo_url TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS success_wall_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_name TEXT NOT NULL,
+        quote TEXT NOT NULL,
+        images_json TEXT NOT NULL DEFAULT '[]',
+        permission_granted INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS growth_path_stages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sort_order INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS faq_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS referral_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_name TEXT NOT NULL,
+        code TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS applicants (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        city TEXT,
+        sales_background TEXT,
+        network_size TEXT,
+        availability TEXT,
+        motivation TEXT,
+        score INTEGER,
+        referral_code TEXT REFERENCES referral_links(code),
+        appointment_date TEXT,
+        appointment_jalali TEXT,
+        appointment_time TEXT,
+        telegram_notified_at TEXT,
+        status TEXT NOT NULL DEFAULT 'new',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS fit_assessment_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        applicant_id INTEGER NOT NULL REFERENCES applicants(id),
+        answers_json TEXT NOT NULL,
+        summary TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS success_visual_story (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        images_json TEXT NOT NULL DEFAULT '[]',
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS rate_limit (
+        key TEXT PRIMARY KEY,
+        count INTEGER NOT NULL DEFAULT 0,
+        reset_at INTEGER NOT NULL DEFAULT 0
+      )`,
+      `CREATE TABLE IF NOT EXISTS uploads (
+        key TEXT PRIMARY KEY,
+        data TEXT NOT NULL,
+        mime TEXT NOT NULL DEFAULT 'image/jpeg',
+        size INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+      // UNIQUE on phone is enforced via index (not inline) so pre-existing
+      // D1 tables created without it still gain the constraint on next boot.
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_applicants_phone ON applicants(phone)`,
+      // Singleton rows: UPDATE ... WHERE id = 1 silently affects 0 rows when
+      // the row is missing (fresh production DBs), so ensure it exists here.
+      `INSERT INTO manager_profile (id) VALUES (1) ON CONFLICT(id) DO NOTHING`,
+      `INSERT INTO success_visual_story (id) VALUES (1) ON CONFLICT(id) DO NOTHING`,
+    ];
+    for (const sql of statements) {
+      await runD1(sql);
+    }
+    await migrateDbD1();
+  } else if (isTurso()) {
     const client = await getTursoClient();
     const schema = `
       CREATE TABLE IF NOT EXISTS manager_profile (
@@ -321,6 +491,13 @@ export async function ensureSchema(): Promise<void> {
         value TEXT NOT NULL DEFAULT '',
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
+      CREATE TABLE IF NOT EXISTS uploads (
+        key TEXT PRIMARY KEY,
+        data TEXT NOT NULL,
+        mime TEXT NOT NULL DEFAULT 'image/jpeg',
+        size INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
     `;
     await client.executeMultiple(schema);
 
@@ -388,6 +565,62 @@ async function migrateDbTurso(client: Client): Promise<void> {
     )`,
     args: [],
   });
+
+  // Singleton rows for fresh production DBs (see D1 branch above).
+  await client.execute({ sql: `INSERT INTO manager_profile (id) VALUES (1) ON CONFLICT(id) DO NOTHING`, args: [] });
+  await client.execute({ sql: `INSERT INTO success_visual_story (id) VALUES (1) ON CONFLICT(id) DO NOTHING`, args: [] });
+
+  // Uploads table for D1-backed image storage (no R2/filesystem)
+  await client.execute({
+    sql: `CREATE TABLE IF NOT EXISTS uploads (
+      key TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      mime TEXT NOT NULL DEFAULT 'image/jpeg',
+      size INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    args: [],
+  });
+}
+
+async function migrateDbD1(): Promise<void> {
+  const ensureCol = async (table: string, col: string, typedef: string) => {
+    const result = await runD1(`PRAGMA table_info(${table})`);
+    const colNames = result.rows.map((r) => r.name as string);
+    if (!colNames.includes(col)) {
+      await runD1(`ALTER TABLE ${table} ADD COLUMN ${col} ${typedef}`);
+    }
+  };
+
+  await ensureCol("applicants", "appointment_date", "TEXT");
+  await ensureCol("applicants", "appointment_jalali", "TEXT");
+  await ensureCol("applicants", "appointment_time", "TEXT");
+  await ensureCol("applicants", "status", "TEXT NOT NULL DEFAULT 'new'");
+  await ensureCol("manager_profile", "site_theme", "TEXT NOT NULL DEFAULT 'warm'");
+  await ensureCol("manager_profile", "photo_url", "TEXT NOT NULL DEFAULT ''");
+  await ensureCol("manager_profile", "position_code", "TEXT NOT NULL DEFAULT ''");
+  await ensureCol("manager_profile", "position_start_date", "TEXT NOT NULL DEFAULT ''");
+  await ensureCol("manager_profile", "title", "TEXT NOT NULL DEFAULT ''");
+  await ensureCol("success_wall_entries", "images_json", "TEXT NOT NULL DEFAULT '[]'");
+  await ensureCol("manager_profile", "growth_agents_6m", "INTEGER");
+  await ensureCol("manager_profile", "growth_agents_1y", "INTEGER");
+  await ensureCol("manager_profile", "growth_agents_2y", "INTEGER");
+  await ensureCol("manager_profile", "growth_policies_6m", "INTEGER");
+  await ensureCol("manager_profile", "growth_policies_1y", "INTEGER");
+  await ensureCol("manager_profile", "growth_policies_2y", "INTEGER");
+
+  // Singleton rows for fresh production DBs (see D1 branch above).
+  await runD1(`INSERT INTO manager_profile (id) VALUES (1) ON CONFLICT(id) DO NOTHING`);
+  await runD1(`INSERT INTO success_visual_story (id) VALUES (1) ON CONFLICT(id) DO NOTHING`);
+
+  // Uploads table for D1-backed image storage (no R2/filesystem)
+  await runD1(`CREATE TABLE IF NOT EXISTS uploads (
+    key TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    mime TEXT NOT NULL DEFAULT 'image/jpeg',
+    size INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
 }
 
 function migrateDbLocal(db: LocalDatabase): void {
@@ -467,5 +700,18 @@ function migrateDbLocal(db: LocalDatabase): void {
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT '',
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+
+  // Singleton rows for fresh production DBs (see D1 branch above).
+  db.exec(`INSERT INTO manager_profile (id) VALUES (1) ON CONFLICT(id) DO NOTHING`);
+  db.exec(`INSERT INTO success_visual_story (id) VALUES (1) ON CONFLICT(id) DO NOTHING`);
+
+  // Uploads table for D1-backed image storage (no R2/filesystem)
+  db.exec(`CREATE TABLE IF NOT EXISTS uploads (
+    key TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    mime TEXT NOT NULL DEFAULT 'image/jpeg',
+    size INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
 }

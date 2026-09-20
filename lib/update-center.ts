@@ -7,7 +7,13 @@
 // env هر دیپلوی خریدار:
 //   UPDATE_CHANGELOG_URL  آدرس عمومی releases.json (از مالک محصول)
 //   APP_VERSION           اختیاری — نسخه نصب‌شده؛ پیش‌فرض از package.json
+//
+// بدون UPDATE_CHANGELOG_URL هم صفحه به‌روزرسانی خالی نیست: releases.json
+// ریشه ریپو (ساخته‌شده از CHANGELOG.md با npm run changelog) داخل بیلد
+// هر خریدار bundle می‌شود و همان نمایش داده می‌شود. فید راه‌دور فقط
+// نسخه‌هایی که «بعد» از این بیلد منتشر شده‌اند را اضافه می‌کند.
 
+import bundledFeed from "../releases.json";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -28,6 +34,20 @@ export interface UpdateCenterInfo {
 
 export function getCurrentVersion(): string {
   if (process.env.APP_VERSION) return process.env.APP_VERSION.trim();
+  try {
+    // Workers: version comes from the APP_VERSION var binding. Dynamic import
+    // keeps this module importable locally where the binding doesn't exist.
+    const modName = "@opennextjs/cloudflare";
+    const getCtx = (module.require(modName) as {
+      getCloudflareContext: (o: { async: false }) => { env: Record<string, unknown> } | null;
+    }).getCloudflareContext;
+    const appVersion = getCtx({ async: false })?.env.APP_VERSION;
+    if (typeof appVersion === "string" && appVersion.trim()) {
+      return appVersion.trim();
+    }
+  } catch {
+    // Not on Workers (local dev) — fall through to package.json read.
+  }
   try {
     const pkg = JSON.parse(readFileSync(path.join(process.cwd(), "package.json"), "utf-8")) as {
       version?: string;
@@ -58,12 +78,47 @@ function clamp(v: unknown, max: number): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
 }
 
+function parseFeed(raw: unknown, currentVersion: string): ReleaseEntry[] {
+  const arr = Array.isArray(raw) ? raw : (raw as { releases?: unknown[] })?.releases;
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((item): ReleaseEntry | null => {
+      const r = item as Record<string, unknown>;
+      const version = clamp(r.version, 30);
+      const title = clamp(r.title, 200);
+      if (!version || !title) return null;
+      const notes = Array.isArray(r.notes)
+        ? r.notes.map((n) => clamp(n, 300)).filter((n) => n.length > 0).slice(0, 20)
+        : [];
+      return {
+        version,
+        date: clamp(r.date, 20),
+        title,
+        notes,
+        isNew: isNewerVersion(version, currentVersion),
+      };
+    })
+    .filter((r): r is ReleaseEntry => r !== null);
+}
+
+function sortReleases(releases: ReleaseEntry[]): ReleaseEntry[] {
+  return releases
+    .sort((a, b) =>
+      isNewerVersion(a.version, b.version) ? -1 : isNewerVersion(b.version, a.version) ? 1 : 0
+    )
+    .slice(0, 30);
+}
+
 export async function fetchRemoteReleases(noStore: boolean): Promise<UpdateCenterInfo> {
   const url = (process.env.UPDATE_CHANGELOG_URL ?? "").trim();
   const currentVersion = getCurrentVersion();
 
+  // همیشه همراه نصب: همان نسخه‌ای که این بیلد از آن ساخته شده.
+  const bundled = sortReleases(parseFeed(bundledFeed as unknown, currentVersion));
+
+  // بدون فید راه‌دور هم صفحه خالی نیست — فقط همین لیست همراه نصب نمایش داده می‌شود.
   if (!url) {
-    return { configured: false, currentVersion, releases: [] };
+    return { configured: bundled.length > 0, currentVersion, releases: bundled };
   }
 
   try {
@@ -76,34 +131,20 @@ export async function fetchRemoteReleases(noStore: boolean): Promise<UpdateCente
     if (!res.ok) throw new Error(`status ${res.status}`);
     const data: unknown = await res.json();
 
-    const raw = Array.isArray(data) ? data : (data as { releases?: unknown[] })?.releases;
-    if (!Array.isArray(raw)) throw new Error("invalid shape");
+    const remote = parseFeed(data, currentVersion);
+    if (remote.length === 0 && !Array.isArray(data) && !Array.isArray((data as { releases?: unknown })?.releases)) {
+      throw new Error("invalid shape");
+    }
 
-    const releases: ReleaseEntry[] = raw
-      .map((item): ReleaseEntry | null => {
-        const r = item as Record<string, unknown>;
-        const version = clamp(r.version, 30);
-        const title = clamp(r.title, 200);
-        if (!version || !title) return null;
-        const notes = Array.isArray(r.notes)
-          ? r.notes.map((n) => clamp(n, 300)).filter((n) => n.length > 0).slice(0, 20)
-          : [];
-        return {
-          version,
-          date: clamp(r.date, 20),
-          title,
-          notes,
-          isNew: isNewerVersion(version, currentVersion),
-        };
-      })
-      .filter((r): r is ReleaseEntry => r !== null)
-      .sort((a, b) =>
-        isNewerVersion(a.version, b.version) ? -1 : isNewerVersion(b.version, a.version) ? 1 : 0
-      )
-      .slice(0, 30);
-
-    return { configured: true, currentVersion, releases };
+    // ادغام: نسخه‌های راه‌دور برنده‌اند؛ بقیه از changelog همراه نصب می‌آیند.
+    const seen = new Set(remote.map((r) => r.version));
+    const merged = sortReleases([...remote, ...bundled.filter((r) => !seen.has(r.version))]);
+    return { configured: true, currentVersion, releases: merged };
   } catch {
+    // فید راه‌دور خراب است ولی لیست همراه نصب را داریم — همان را نشان بده.
+    if (bundled.length > 0) {
+      return { configured: true, error: "fetch_failed", currentVersion, releases: bundled };
+    }
     return { configured: true, error: "fetch_failed", currentVersion, releases: [] };
   }
 }

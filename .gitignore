@@ -83,3 +83,8 @@ Insurance
 # graphify tool artifacts (dated snapshots + AST cache)
 graphify-out/2026-*/
 graphify-out/cache/ast/
+
+# per-client deploy configs (contain SESSION_SECRET/ADMIN_PASSWORD) + deploy logs (may contain tokens)
+wrangler.*.toml
+deploy-*.txt
+err.txt

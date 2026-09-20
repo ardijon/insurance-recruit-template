@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   const row = await selectOne(
     "SELECT images_json FROM success_visual_story WHERE id = 1"
   ) as { images_json: string } | undefined;
+  // images_json now stores /api/uploads/<key> paths — browser loads them directly
   return NextResponse.json({ images_json: row?.images_json ?? "[]" });
 }
 

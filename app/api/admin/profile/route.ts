@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
+import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoProfile } from "@/lib/demo";
 
 export async function GET(request: NextRequest) {
@@ -127,7 +127,9 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    await executeUpdate(
+    // Upsert instead of bare UPDATE: a fresh DB has no row id=1, and an
+    // UPDATE there affects 0 rows while still returning success.
+    const result = await executeUpdate(
       `UPDATE manager_profile SET
         name = COALESCE(?, name),
         title = COALESCE(?, title),
@@ -160,6 +162,27 @@ export async function PUT(request: NextRequest) {
         body.growth_policies_2y ?? null,
       ]
     );
+    if (result.rowsAffected === 0) {
+      await executeInsert(
+        `INSERT INTO manager_profile (id, name, title, position_code, position_start_date, bio, achievements, current_agent_count, growth_agents_6m, growth_agents_1y, growth_agents_2y, growth_policies_6m, growth_policies_1y, growth_policies_2y)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          name ?? "",
+          title ?? "",
+          body.position_code ?? "",
+          body.position_start_date ?? "",
+          bio ?? "",
+          achievements ?? "",
+          body.current_agent_count ?? 0,
+          body.growth_agents_6m ?? null,
+          body.growth_agents_1y ?? null,
+          body.growth_agents_2y ?? null,
+          body.growth_policies_6m ?? null,
+          body.growth_policies_1y ?? null,
+          body.growth_policies_2y ?? null,
+        ]
+      );
+    }
     revalidatePath("/");
     revalidateTag("home", "max");
     return NextResponse.json({ success: true });

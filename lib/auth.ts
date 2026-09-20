@@ -1,7 +1,15 @@
 import { selectOne } from "@/lib/db";
 
 export const SESSION_COOKIE = "admin_session";
+// Double-submit CSRF cookie — must stay readable by JS (httpOnly: false)
+// because adminFetch mirrors it into the x-csrf-token header.
+export const CSRF_COOKIE = "csrf_token";
+export const CSRF_MAX_AGE = 60 * 60 * 24;
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export function newCsrfToken(): string {
+  return crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+}
 const BCRYPT_ROUNDS = 10;
 
 // Per-process fallback secret used only when neither SESSION_SECRET nor

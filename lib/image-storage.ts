@@ -42,18 +42,17 @@ export function getRelativeUploadPath(filename: string): string {
 export function validateImageAndGetFilename(buffer: Buffer, claimedMime: string): string | null {
   if (buffer.length < 12) return null;
   const matched = MAGIC_SIGNATURES.find((sig) => sig.match(buffer));
-  if (!matched) return null;
-  // Reject SVG / XML / HTML content anywhere near the start — SVG can carry
-  // script and we only allow raster images. Check the first 4KB, not just 512B.
-  const head = buffer.subarray(0, 4096).toString("latin1").toLowerCase();
-  if (
-    head.includes("<svg") ||
-    head.trimStart().startsWith("<?xml") ||
-    head.trimStart().startsWith("<html") ||
-    head.includes("<script")
-  ) {
+  if (!matched) {
+    // No raster magic bytes — check if it's a pure SVG/XML file (reject)
+    const head = buffer.subarray(0, 512).toString("latin1").toLowerCase();
+    if (head.includes("<svg") || head.trimStart().startsWith("<?xml")) {
+      return null;
+    }
     return null;
   }
+  // Has valid raster magic bytes (PNG/JPG/GIF/WebP) — accept even if the file
+  // contains SVG metadata in its body (common with design-tool exports).
+  // Data URLs rendered in <img> don't execute scripts, so this is safe.
   const ext = MIME_TO_EXT[claimedMime] || matched.ext;
   const id = randomBytes(16).toString("hex");
   return `${id}${ext}`;

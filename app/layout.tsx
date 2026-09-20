@@ -13,10 +13,36 @@ const vazirmatn = LocalFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "سایت اختصاصی مدیر فروش بیمه عمر",
-  description: "ابزاری برای جذب نماینده‌های باکیفیت‌تر",
-};
+const DEFAULT_TITLE = "سایت اختصاصی مدیر فروش بیمه عمر";
+const DEFAULT_DESCRIPTION = "ابزاری برای جذب نماینده‌های باکیفیت‌تر";
+
+// Dynamic tab title from the manager profile: "{name} | {title}".
+// Falls back to the generic title when the profile is empty (fresh DB)
+// or unavailable, so it stays correct for every management level.
+export async function generateMetadata(): Promise<Metadata> {
+  if (isDemoMode()) {
+    return { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION };
+  }
+  try {
+    const { selectOne, ensureSchema } = await import("@/lib/db");
+    await ensureSchema();
+    const row = await selectOne(
+      "SELECT name, title, bio FROM manager_profile WHERE id = 1"
+    ) as { name?: string; title?: string; bio?: string } | undefined;
+    const name = row?.name?.trim();
+    const title = row?.title?.trim();
+    const bio = row?.bio?.trim();
+    if (!name && !title) {
+      return { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION };
+    }
+    return {
+      title: [name, title].filter(Boolean).join(" | "),
+      description: bio ? bio.slice(0, 155) : DEFAULT_DESCRIPTION,
+    };
+  } catch {
+    return { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION };
+  }
+}
 
 function isDemoMode(): boolean {
   return process.env.DEMO_MODE === "true";
