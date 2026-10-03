@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
+import { revalidateHome } from "@/lib/revalidate";
+import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest(request))) {
@@ -29,10 +30,17 @@ export async function PUT(request: NextRequest) {
   }
 
   await ensureSchema();
-  await executeUpdate(
+  const result = await executeUpdate(
     "UPDATE manager_profile SET site_theme = ?, updated_at = datetime('now') WHERE id = 1",
     [body.theme]
   );
+  if (result.rowsAffected === 0) {
+    await executeInsert(
+      "INSERT INTO manager_profile (id, site_theme) VALUES (1, ?)",
+      [body.theme]
+    );
+  }
 
+  revalidateHome();
   return NextResponse.json({ success: true, theme: body.theme });
 }

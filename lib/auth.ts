@@ -51,6 +51,9 @@ function bufToHex(buf: ArrayBuffer): string {
 }
 
 function hexToBuf(hex: string): Uint8Array {
+  if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length % 2 !== 0) {
+    throw new Error("Invalid hex string");
+  }
   return new Uint8Array(hex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
 }
 
@@ -67,33 +70,43 @@ export async function createSessionValue(): Promise<string> {
 }
 
 export async function verifySessionValue(token: string): Promise<boolean> {
-  if (!token) return false;
-  const dot = token.lastIndexOf(".");
-  if (dot === -1) return false;
-  const payload = token.slice(0, dot);
-  const sigHex = token.slice(dot + 1);
-  const sep = payload.indexOf(":");
-  if (sep === -1) return false;
-  const expiresAt = Number(payload.slice(sep + 1));
-  if (Date.now() > expiresAt) return false;
-  let key: CryptoKey;
   try {
-    key = await getSigningKey();
+    if (!token) return false;
+    const dot = token.lastIndexOf(".");
+    if (dot === -1) return false;
+    const payload = token.slice(0, dot);
+    const sigHex = token.slice(dot + 1);
+    if (!/^[0-9a-fA-F]+$/.test(sigHex) || sigHex.length % 2 !== 0) return false;
+    const sep = payload.indexOf(":");
+    if (sep === -1) return false;
+    const expiresAt = Number(payload.slice(sep + 1));
+    if (Date.now() > expiresAt) return false;
+    let key: CryptoKey;
+    try {
+      key = await getSigningKey();
+    } catch {
+      return false;
+    }
+    const expected = new Uint8Array(
+      await crypto.subtle.sign(
+        "HMAC",
+        key,
+        new TextEncoder().encode(payload),
+      ),
+    );
+    let actual: Uint8Array;
+    try {
+      actual = hexToBuf(sigHex);
+    } catch {
+      return false;
+    }
+    if (expected.length !== actual.length) return false;
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) diff |= expected[i] ^ actual[i];
+    return diff === 0;
   } catch {
     return false;
   }
-  const expected = new Uint8Array(
-    await crypto.subtle.sign(
-      "HMAC",
-      key,
-      new TextEncoder().encode(payload),
-    ),
-  );
-  const actual = hexToBuf(sigHex);
-  if (expected.length !== actual.length) return false;
-  let diff = 0;
-  for (let i = 0; i < expected.length; i++) diff |= expected[i] ^ actual[i];
-  return diff === 0;
 }
 
 export async function timingSafeEqual(a: string, b: string): Promise<boolean> {

@@ -75,6 +75,7 @@ export async function notifyManagerOnTelegram(
       text: message,
       parse_mode: "HTML",
     }),
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) {
@@ -90,7 +91,7 @@ export async function testTelegramConnection(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const url = `${TELEGRAM_API}/bot${token}/getMe`;
-    const meRes = await fetch(url);
+    const meRes = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!meRes.ok) {
       return { success: false, error: "توکن ربات نامعتبر است" };
     }
@@ -108,6 +109,7 @@ export async function testTelegramConnection(
         text: testMsg,
         parse_mode: "HTML",
       }),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!sendRes.ok) {
@@ -146,6 +148,7 @@ export async function sendTelegramText(text: string): Promise<boolean> {
       text,
       parse_mode: "HTML",
     }),
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) {
@@ -174,8 +177,8 @@ function buildMessage(applicant: ApplicantNotification): string {
     lines.push(`<b>امتیاز کل:</b> ${applicant.score}`);
     if (breakdown) {
       lines.push(`  · سابقه فروش: ${breakdown.salesBackground}/40`);
-      lines.push(`  · شبکه ارتباطی: ${breakdown.networkSize}/30`);
-      lines.push(`  · زمان در دسترس: ${breakdown.availability}/30`);
+      lines.push(`  · شبکه ارتباطی: ${breakdown.networkSize}/15`);
+      lines.push(`  · زمان در دسترس: ${breakdown.availability}/15`);
     }
     if (applicant.fitResult) {
       lines.push(`  · تناسب شغلی: ${applicant.fitResult.fitScore}/${applicant.fitResult.maxFitScore} (${applicant.fitResult.summary})`);

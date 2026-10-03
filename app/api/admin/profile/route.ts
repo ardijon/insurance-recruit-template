@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoProfile } from "@/lib/demo";
 
@@ -183,8 +183,7 @@ export async function PUT(request: NextRequest) {
         ]
       );
     }
-    revalidatePath("/");
-    revalidateTag("home", "max");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[profile] update error:", err);

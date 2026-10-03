@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { ToastContainer } from "@/components/toast";
-import type { Toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { adminFetch } from "@/lib/api-client";
+import { Lightbox } from "@/components/lightbox";
 
 export default function VisualStoryPage() {
   const [images, setImages] = useState<string[]>([]);
@@ -11,14 +12,7 @@ export default function VisualStoryPage() {
   const [uploading, setUploading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastIdRef = useRef(0);
-
-  function addToast(message: string, type: "success" | "error" = "success") {
-    const id = toastIdRef.current++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }
+  const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     adminFetch("/api/admin/visual-story")
@@ -124,37 +118,11 @@ export default function VisualStoryPage() {
         </div>
       )}
 
-      {/* Lightbox */}
       {lightboxIdx !== null && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-bg-base/95 backdrop-blur-md" onClick={() => setLightboxIdx(null)}>
-          <button type="button" onClick={() => setLightboxIdx(null)} className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-black/10 text-text-primary hover:bg-black/20 transition-colors">
-            <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-          {images.length > 1 && (
-            <>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIdx((p) => p !== null ? (p > 0 ? p - 1 : images.length - 1) : null); }} className="hidden md:flex absolute left-6 top-1/2 -translate-y-1/2 z-10 size-11 items-center justify-center rounded-full bg-black/8 text-text-primary/70 hover:bg-black/15 transition-all">
-                <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setLightboxIdx((p) => p !== null ? (p < images.length - 1 ? p + 1 : 0) : null); }} className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 z-10 size-11 items-center justify-center rounded-full bg-black/8 text-text-primary/70 hover:bg-black/15 transition-all">
-                <svg className="size-6 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-            </>
-          )}
-          <div className="flex-1 flex items-center justify-center px-4 overflow-hidden">
-            <img src={images[lightboxIdx]} alt="" className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-lg" onClick={(e) => e.stopPropagation()} draggable={false} />
-          </div>
-          <div className="pb-6 pt-2">
-            <span className="inline-block rounded-full bg-black/10 px-4 py-1.5 text-sm font-medium text-text-primary backdrop-blur-sm">
-              {lightboxIdx + 1} / {images.length}
-            </span>
-          </div>
-        </div>
+        <Lightbox images={images} initialIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
 
-      <ToastContainer toasts={toasts} onRemove={(id: number) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 }

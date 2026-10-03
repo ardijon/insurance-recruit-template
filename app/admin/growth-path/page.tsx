@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ToastContainer } from "@/components/toast";
 import { calculateGrowthScore, toPersianNumbers, type GrowthScoreResult } from "@/lib/growth-score";
-import type { Toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { adminFetch } from "@/lib/api-client";
 
 interface Stage {
@@ -35,16 +35,9 @@ export default function GrowthPathPage() {
   const [editDescription, setEditDescription] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const { toasts, addToast, removeToast } = useToast();
   const [score, setScore] = useState<GrowthScoreResult | null>(null);
   const [showGuide, setShowGuide] = useState(false);
-  let toastId = 0;
-
-  function addToast(message: string, type: "success" | "error" = "success") {
-    const id = toastId++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }
 
   function load() {
     adminFetch("/api/admin/growth-path")
@@ -341,7 +334,7 @@ export default function GrowthPathPage() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 }

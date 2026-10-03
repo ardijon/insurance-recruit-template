@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeInsert, ensureSchema } from "@/lib/db";
 import { checkPublicRateLimit, getRateLimitKey } from "@/lib/rate-limit";
-import { verifySessionValue, SESSION_COOKIE } from "@/lib/auth";
-import { isDemoMode } from "@/lib/demo";
+import { isAdminRequest } from "@/lib/admin-guard";
 
 const CODE_REGEX = /^[a-zA-Z0-9_-]{3,32}$/;
 
@@ -10,9 +9,7 @@ export async function POST(request: NextRequest) {
   // This endpoint mutates the database, so it must be authenticated. The
   // public application form does not create referral links — only the admin
   // panel does — so require a valid admin session (demo mode allows it too).
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const demo = isDemoMode();
-  if (!demo && (!token || !(await verifySessionValue(token)))) {
+  if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

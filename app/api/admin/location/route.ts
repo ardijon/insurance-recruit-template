@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectAll, executeInsert, ensureSchema } from "@/lib/db";
 import { isAdminRequest } from "@/lib/admin-guard";
 
@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest) {
         [key, values[key]]
       );
     }
-    revalidateTag("home", "max");
+    revalidateHome();
     return NextResponse.json({ message: "موقعیت مکانی ذخیره شد" });
   } catch {
     return NextResponse.json({ error: "خطا در ذخیره موقعیت مکانی" }, { status: 500 });

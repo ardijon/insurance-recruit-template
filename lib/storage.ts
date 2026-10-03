@@ -28,14 +28,3 @@ export async function getR2Bucket(): Promise<R2BucketLike | null> {
   }
 }
 
-export function isR2Url(url: string): boolean {
-  return url.startsWith("/api/uploads/");
-}
-
-export function r2KeyFromUrl(url: string): string {
-  return url.replace(/^\/api\/uploads\//, "");
-}
-
-export function r2UrlFromKey(key: string): string {
-  return `/api/uploads/${key}`;
-}

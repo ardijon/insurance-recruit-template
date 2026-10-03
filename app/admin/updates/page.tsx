@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { toPersianDigits } from "@/lib/jalali";
 import { adminFetch } from "@/lib/api-client";
+import { isNewerVersion } from "@/lib/version";
 
 interface ReleaseEntry {
   version: string;
@@ -22,17 +23,6 @@ interface UpdateCenterInfo {
 
 const SEEN_KEY = "updates_seen_version";
 
-function isNewer(a: string, b: string): boolean {
-  const pa = a.replace(/[^0-9.]/g, "").split(".").map((n) => parseInt(n, 10) || 0);
-  const pb = b.replace(/[^0-9.]/g, "").split(".").map((n) => parseInt(n, 10) || 0);
-  const len = Math.max(pa.length, pb.length);
-  for (let i = 0; i < len; i++) {
-    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (d !== 0) return d > 0;
-  }
-  return false;
-}
-
 export default function UpdatesPage() {
   const [info, setInfo] = useState<UpdateCenterInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +31,7 @@ export default function UpdatesPage() {
   const [deployResult, setDeployResult] = useState<string | null>(null);
 
   const load = useCallback((refresh = false) => {
-    adminFetch(`/api/admin/update-center${refresh ? "?refresh=1" : ""}`)
+    return adminFetch(`/api/admin/update-center${refresh ? "?refresh=1" : ""}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d: UpdateCenterInfo | null) => setInfo(d))
       .catch(() => setInfo(null))
@@ -54,7 +44,7 @@ export default function UpdatesPage() {
 
   const seenVersion =
     typeof window !== "undefined" ? localStorage.getItem(SEEN_KEY) ?? "" : "";
-  const newReleases = (info?.releases ?? []).filter((r) => isNewer(r.version, seenVersion));
+  const newReleases = (info?.releases ?? []).filter((r) => isNewerVersion(r.version, seenVersion));
 
   function markSeen() {
     const latest = info?.releases[0];
@@ -67,8 +57,11 @@ export default function UpdatesPage() {
 
   async function handleCheck() {
     setChecking(true);
-    load(true);
-    setTimeout(() => setChecking(false), 1200);
+    try {
+      await load(true);
+    } finally {
+      setChecking(false);
+    }
   }
 
   async function handleDeploy() {
@@ -215,7 +208,7 @@ export default function UpdatesPage() {
                       جدید
                     </span>
                   )}
-                  {info!.deployHookConfigured && isNewer(release.version, info!.currentVersion) && (
+                  {info!.deployHookConfigured && isNewerVersion(release.version, info!.currentVersion) && (
                     <span className="text-[10px] text-text-secondary">— برای دریافت، «نصب نسخه جدید» را بزنید</span>
                   )}
                 </div>

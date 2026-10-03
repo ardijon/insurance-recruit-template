@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LocalFont from "next/font/local";
+import { isDemoMode } from "@/lib/demo";
 import "./globals.css";
 
 const vazirmatn = LocalFont({
@@ -42,10 +43,6 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {
     return { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION };
   }
-}
-
-function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === "true";
 }
 
 export default async function RootLayout({

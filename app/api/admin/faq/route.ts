@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { revalidatePath } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectAll, executeInsert, executeUpdate, updateSortOrders, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoFaqItems } from "@/lib/demo";
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     "INSERT INTO faq_items (question, answer, sort_order) VALUES (?, ?, ?)",
     [body.question, body.answer, body.sort_order ?? 0]
   );
-  revalidatePath("/");
+  revalidateHome();
   return NextResponse.json({ id: Number(result.lastInsertRowid) }, { status: 201 });
 }
 
@@ -71,17 +71,22 @@ export async function PATCH(request: NextRequest) {
   try {
     await ensureSchema();
 
-    if (body.question !== undefined && body.answer !== undefined) {
-      await executeUpdate("UPDATE faq_items SET question = ?, answer = ? WHERE id = ?", [body.question, body.answer, body.id]);
-    } else if (body.question !== undefined) {
-      await executeUpdate("UPDATE faq_items SET question = ? WHERE id = ?", [body.question, body.id]);
-    } else if (body.answer !== undefined) {
-      await executeUpdate("UPDATE faq_items SET answer = ? WHERE id = ?", [body.answer, body.id]);
-    } else {
+    const FIELDS = ["question", "answer"] as const;
+    const updates: string[] = [];
+    const params: (string | number)[] = [];
+    for (const field of FIELDS) {
+      if (body[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        params.push(body[field]);
+      }
+    }
+    if (updates.length === 0) {
       return NextResponse.json({ error: "no fields to update" }, { status: 422 });
     }
+    params.push(body.id);
+    await executeUpdate(`UPDATE faq_items SET ${updates.join(", ")} WHERE id = ?`, params);
 
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی" }, { status: 500 });
@@ -106,7 +111,7 @@ export async function PUT(request: NextRequest) {
   try {
     await ensureSchema();
     await updateSortOrders("faq_items", body.orders);
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی ترتیب" }, { status: 500 });
@@ -129,7 +134,7 @@ export async function DELETE(request: NextRequest) {
     if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "item not found" }, { status: 404 });
     }
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در حذف" }, { status: 500 });

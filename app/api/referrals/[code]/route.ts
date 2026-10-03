@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { selectOne, ensureSchema } from "@/lib/db";
+import { checkPublicRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
+
+  const rlKey = getRateLimitKey(_request);
+  if (!(await checkPublicRateLimit(rlKey, 10))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   await ensureSchema();
 

@@ -1,5 +1,4 @@
 import { randomBytes } from "crypto";
-import { basename } from "path";
 
 const MIME_TO_EXT: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -29,13 +28,6 @@ const MAGIC_SIGNATURES: { ext: string; match: (b: Buffer) => boolean }[] = [
   },
 ];
 
-export function isBase64DataUrl(url: string): boolean {
-  return url.startsWith("data:");
-}
-
-export function getRelativeUploadPath(filename: string): string {
-  return `/uploads/${basename(filename)}`;
-}
 
 // Returns the safe on-disk filename, or null if the buffer is not a real
 // image of an allowed type. Strips any path components from the caller.

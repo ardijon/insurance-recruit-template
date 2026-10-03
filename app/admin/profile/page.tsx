@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import Image from "next/image";
+import { useEffect, useState, useRef } from "react";
 import { ToastContainer } from "@/components/toast";
 import { JalaliDatePicker } from "@/components/jalali-date-picker";
-import type { Toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { adminFetch } from "@/lib/api-client";
 
 interface ProfileData {
@@ -47,14 +46,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastIdRef = useRef(0);
-
-  const addToast = useCallback((message: string, type: "success" | "error" = "success") => {
-    const id = toastIdRef.current++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }, []);
+  const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     adminFetch("/api/admin/profile")
@@ -176,6 +168,7 @@ export default function ProfilePage() {
                 {uploading ? "..." : "انتخاب عکس"}
               </button>
               <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+              <p className="mt-1 text-xs text-text-secondary">عکس بلافاصله ذخیره می‌شود</p>
             </div>
             {/* Fields */}
             <div className="flex-1 flex flex-col gap-3">
@@ -346,7 +339,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 }

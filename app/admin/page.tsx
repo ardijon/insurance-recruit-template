@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import { formatJalali, formatJalaliShort, toPersianDigits, todayJalaliDate, dateFromIso } from "@/lib/jalali";
 import { formatSalesBackground } from "@/lib/sales-background";
 import { JalaliCalendar } from "@/components/jalali-calendar";
 import { ToastContainer } from "@/components/toast";
-import type { Toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { FilterBar, type ApplicantFilters } from "@/components/applicant-filters";
 import { ApplicantTable, type SortField } from "@/components/applicant-table";
 import { StatusBadge, STATUS_CONFIG } from "@/components/status-badge";
@@ -90,18 +90,12 @@ export default function AdminDashboard() {
   const [calendarTime, setCalendarTime] = useState<string | null>(null);
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const { toasts, addToast, removeToast } = useToast();
   const [detailFor, setDetailFor] = useState<Applicant | null>(null);
   const [profile, setProfile] = useState<{ position_code: string; current_agent_count: number } | null>(null);
   const [telegramConfigured, setTelegramConfigured] = useState(true);
   const [telegramDismissed, setTelegramDismissed] = useState(false);
 
-  const toastIdRef = useRef(0);
-  const addToast = useCallback((message: string, type: "success" | "error" = "success") => {
-    const id = toastIdRef.current++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -564,7 +558,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 }

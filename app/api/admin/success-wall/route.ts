@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { revalidatePath } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectAll, executeUpdate, executeInsert as execInsert, updateSortOrders, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoSuccessWallEntries } from "@/lib/demo";
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       [body.agent_name, body.quote, body.images_json ?? "[]", body.permission_granted ? 1 : 0, body.sort_order ?? 0]
     );
 
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json(
       { id: Number(result.lastInsertRowid) },
       { status: 201 },
@@ -100,7 +100,7 @@ export async function PATCH(request: NextRequest) {
     }
     params.push(body.id);
     await executeUpdate(`UPDATE success_wall_entries SET ${updates.join(", ")} WHERE id = ?`, params);
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی" }, { status: 500 });
@@ -126,7 +126,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     await updateSortOrders("success_wall_entries", body.orders);
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی ترتیب" }, { status: 500 });
@@ -149,7 +149,7 @@ export async function DELETE(request: NextRequest) {
     if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "entry not found" }, { status: 404 });
     }
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در حذف" }, { status: 500 });

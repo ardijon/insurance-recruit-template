@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ToastContainer } from "@/components/toast";
-import type { Toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { adminFetch } from "@/lib/api-client";
 
 interface FaqItem {
@@ -23,14 +23,7 @@ export default function FaqPage() {
   const [editAnswer, setEditAnswer] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  let toastId = 0;
-
-  function addToast(message: string, type: "success" | "error" = "success") {
-    const id = toastId++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }
+  const { toasts, addToast, removeToast } = useToast();
 
   function load() {
     adminFetch("/api/admin/faq")
@@ -210,7 +203,7 @@ export default function FaqPage() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 }

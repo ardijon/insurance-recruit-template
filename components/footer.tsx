@@ -93,7 +93,7 @@ export function Footer({ brandLabel, storeUrl }: { brandLabel?: string; storeUrl
             <>
               {" · "}
               <a
-                href={`${storeUrl.replace(/\/+$/, "")}?utm_source=footer&utm_medium=referral`}
+                href={`${storeUrl.replace(/\/+$/, "")}${storeUrl.includes("?") ? "&" : "?"}utm_source=footer&utm_medium=referral`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-text-secondary/60 transition-colors hover:text-brand-cta"

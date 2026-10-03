@@ -75,8 +75,8 @@ export function Lightbox({ images, initialIdx, onClose }: LightboxProps) {
     else { setDragX(0); setBgOpacity(1); }
   }
 
-  const getSlideStyle = (): React.CSSProperties => {
-    if (dragX !== 0 && !isAnimating.current) {
+  const slideStyle = ((): React.CSSProperties => {
+    if (dragX !== 0 && transition === null) {
       return {
         transform: `translateX(${dragX * 0.5}px) scale(${1 - Math.abs(dragX) / 2000})`,
         transition: "none",
@@ -101,7 +101,7 @@ export function Lightbox({ images, initialIdx, onClose }: LightboxProps) {
       opacity: 1,
       transition: "transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
     };
-  };
+  })();
 
   return (
     <div
@@ -155,6 +155,16 @@ export function Lightbox({ images, initialIdx, onClose }: LightboxProps) {
         </>
       )}
 
+      {/* Neighbor preloads so prev/next images appear instantly */}
+      <div aria-hidden="true" className="hidden">
+        {images.length > 1 && (
+          <>
+            <img key={`prev-${currentIdx}`} src={images[(currentIdx - 1 + images.length) % images.length]} alt="" />
+            <img key={`next-${currentIdx}`} src={images[(currentIdx + 1) % images.length]} alt="" />
+          </>
+        )}
+      </div>
+
       {/* Image */}
       <div className="flex-1 flex items-center justify-center px-6 overflow-hidden select-none">
         <img
@@ -162,7 +172,7 @@ export function Lightbox({ images, initialIdx, onClose }: LightboxProps) {
           src={images[currentIdx]}
           alt=""
           className="max-h-[82vh] max-w-full rounded-2xl object-contain shadow-2xl will-change-transform"
-          style={getSlideStyle()}
+          style={slideStyle}
           onClick={(e) => e.stopPropagation()}
           draggable={false}
         />

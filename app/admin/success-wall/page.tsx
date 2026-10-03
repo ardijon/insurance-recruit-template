@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { ToastContainer } from "@/components/toast";
-import type { Toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { adminFetch } from "@/lib/api-client";
+import { Lightbox } from "@/components/lightbox";
 
 interface Entry {
   id: number;
@@ -27,17 +27,10 @@ export default function SuccessWallPage() {
   const [editPermission, setEditPermission] = useState(0);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const { toasts, addToast, removeToast } = useToast();
   const [uploadingId, setUploadingId] = useState<number | null>(null);
-  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; idx: number } | null>(null);
   const fileRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-  const toastIdRef = useRef(0);
-
-  function addToast(message: string, type: "success" | "error" = "success") {
-    const id = toastIdRef.current++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }
 
   function load() {
     adminFetch("/api/admin/success-wall")
@@ -268,13 +261,13 @@ export default function SuccessWallPage() {
                         <div className="flex flex-wrap gap-2">
                           {images.map((img, i) => (
                             <div key={i} className="relative group size-20 overflow-hidden rounded-lg border border-border">
-                              <button type="button" onClick={() => setLightboxImg(img)} className="size-full">
+                              <button type="button" onClick={() => setLightbox({ images, idx: i })} className="size-full">
                                 <img src={img} alt="" className="size-full object-cover" loading="lazy" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(e.id, img)}
-                                className="absolute top-0.5 left-0.5 size-5 flex items-center justify-center rounded-full bg-danger text-cta-contrast text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-0.5 left-0.5 size-5 flex items-center justify-center rounded-full bg-danger text-cta-contrast text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                               >
                                 ×
                               </button>
@@ -291,17 +284,11 @@ export default function SuccessWallPage() {
         </div>
       )}
 
-      {/* Lightbox */}
-      {lightboxImg && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bg-base/95 backdrop-blur-md" onClick={() => setLightboxImg(null)}>
-          <button type="button" onClick={() => setLightboxImg(null)} className="absolute top-4 left-4 z-10 size-10 flex items-center justify-center rounded-full bg-black/10 text-text-primary text-lg hover:bg-black/20 transition-colors">
-            ×
-          </button>
-          <img src={lightboxImg} alt="" className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-lg" onClick={(e) => e.stopPropagation()} draggable={false} />
-        </div>
+      {lightbox && (
+        <Lightbox images={lightbox.images} initialIdx={lightbox.idx} onClose={() => setLightbox(null)} />
       )}
 
-      <ToastContainer toasts={toasts} onRemove={(id: number) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 }

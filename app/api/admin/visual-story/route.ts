@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { revalidatePath } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectOne, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
@@ -44,6 +44,6 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  revalidatePath("/");
+  revalidateHome();
   return NextResponse.json({ success: true });
 }

@@ -1,6 +1,7 @@
 // scripts/setup-db.ts
 // Creates tables in Turso database at build time
 import { createClient } from "@libsql/client";
+import { SCHEMA_STATEMENTS } from "../lib/schema";
 
 async function main() {
   const url = process.env.TURSO_DATABASE_URL;
@@ -14,88 +15,9 @@ async function main() {
   console.log("Setting up Turso database...");
   const client = createClient({ url, authToken: token });
 
-  await client.executeMultiple(`
-    CREATE TABLE IF NOT EXISTS manager_profile (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      name TEXT NOT NULL DEFAULT '',
-      title TEXT NOT NULL DEFAULT '',
-      position_code TEXT NOT NULL DEFAULT '',
-      position_start_date TEXT NOT NULL DEFAULT '',
-      bio TEXT NOT NULL DEFAULT '',
-      achievements TEXT NOT NULL DEFAULT '',
-      current_agent_count INTEGER NOT NULL DEFAULT 0,
-      growth_agents_6m INTEGER,
-      growth_agents_1y INTEGER,
-      growth_agents_2y INTEGER,
-      growth_policies_6m INTEGER,
-      growth_policies_1y INTEGER,
-      growth_policies_2y INTEGER,
-      site_theme TEXT NOT NULL DEFAULT 'warm',
-      photo_url TEXT NOT NULL DEFAULT '',
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS success_wall_entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      agent_name TEXT NOT NULL,
-      quote TEXT NOT NULL,
-      images_json TEXT NOT NULL DEFAULT '[]',
-      permission_granted INTEGER NOT NULL DEFAULT 0,
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS growth_path_stages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sort_order INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS faq_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      question TEXT NOT NULL,
-      answer TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS referral_links (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      agent_name TEXT NOT NULL,
-      code TEXT NOT NULL UNIQUE,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS applicants (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      full_name TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      city TEXT,
-      sales_background TEXT,
-      network_size TEXT,
-      availability TEXT,
-      motivation TEXT,
-      score INTEGER,
-      referral_code TEXT,
-      appointment_date TEXT,
-      appointment_time TEXT,
-      telegram_notified_at TEXT,
-      status TEXT NOT NULL DEFAULT 'new',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS fit_assessment_results (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      applicant_id INTEGER NOT NULL,
-      answers_json TEXT NOT NULL,
-      summary TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS success_visual_story (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      images_json TEXT NOT NULL DEFAULT '[]',
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL DEFAULT '',
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
+  await client.executeMultiple(
+    `${SCHEMA_STATEMENTS.filter((s) => !s.startsWith("INSERT INTO")).join(";\n")};`
+  );
 
   // Seed default data
   const profileCount = await client.execute("SELECT COUNT(*) AS c FROM manager_profile");

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { revalidatePath } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectAll, executeInsert, executeUpdate, updateSortOrders, ensureSchema } from "@/lib/db";
 import { isDemoMode, getDemoGrowthPathStages } from "@/lib/demo";
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     "INSERT INTO growth_path_stages (title, description, sort_order) VALUES (?, ?, ?)",
     [body.title, body.description ?? "", body.sort_order ?? 0]
   );
-  revalidatePath("/");
+  revalidateHome();
   return NextResponse.json({ id: Number(result.lastInsertRowid) }, { status: 201 });
 }
 
@@ -71,17 +71,22 @@ export async function PATCH(request: NextRequest) {
   try {
     await ensureSchema();
 
-    if (body.title !== undefined && body.description !== undefined) {
-      await executeUpdate("UPDATE growth_path_stages SET title = ?, description = ? WHERE id = ?", [body.title, body.description, body.id]);
-    } else if (body.title !== undefined) {
-      await executeUpdate("UPDATE growth_path_stages SET title = ? WHERE id = ?", [body.title, body.id]);
-    } else if (body.description !== undefined) {
-      await executeUpdate("UPDATE growth_path_stages SET description = ? WHERE id = ?", [body.description, body.id]);
-    } else {
+    const FIELDS = ["title", "description"] as const;
+    const updates: string[] = [];
+    const params: (string | number)[] = [];
+    for (const field of FIELDS) {
+      if (body[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        params.push(body[field]);
+      }
+    }
+    if (updates.length === 0) {
       return NextResponse.json({ error: "no fields to update" }, { status: 422 });
     }
+    params.push(body.id);
+    await executeUpdate(`UPDATE growth_path_stages SET ${updates.join(", ")} WHERE id = ?`, params);
 
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی" }, { status: 500 });
@@ -106,7 +111,7 @@ export async function PUT(request: NextRequest) {
   try {
     await ensureSchema();
     await updateSortOrders("growth_path_stages", body.orders);
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در بروزرسانی ترتیب" }, { status: 500 });
@@ -129,7 +134,7 @@ export async function DELETE(request: NextRequest) {
     if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "stage not found" }, { status: 404 });
     }
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در حذف" }, { status: 500 });

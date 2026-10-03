@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-guard";
-import { revalidatePath } from "next/cache";
+import { revalidateHome } from "@/lib/revalidate";
 import { selectOne, executeUpdate, ensureSchema } from "@/lib/db";
-import { saveUpload } from "@/lib/upload-store";
-import { validateImageAndGetFilename } from "@/lib/image-storage";
+import { validateAndStoreUpload } from "@/lib/upload-handler";
 
 export const runtime = "nodejs";
-
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-const MAX_SIZE = 5 * 1024 * 1024;
-
-function validateImage(file: File): string | null {
-  if (!ALLOWED_TYPES.includes(file.type)) return "فرمت فایل مجاز نیست (jpg, png, gif, webp)";
-  if (file.size > MAX_SIZE) return "حجم فایل نباید بیشتر از ۵ مگابایت باشد";
-  return null;
-}
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminRequest(request))) {
@@ -28,17 +18,9 @@ export async function POST(request: NextRequest) {
     if (!file || !entryId) {
       return NextResponse.json({ error: "image and entry_id are required" }, { status: 422 });
     }
-    const err = validateImage(file);
-    if (err) return NextResponse.json({ error: err }, { status: 422 });
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const filename = validateImageAndGetFilename(buffer, file.type);
-    if (!filename) return NextResponse.json({ error: "فایل معتبر نیست (فقط عکس مجاز است)" }, { status: 422 });
-
-    // saveUpload returns /api/uploads/<key> — stored directly in JSON
-    const imageUrl = await saveUpload(buffer, file.type);
+    const stored = await validateAndStoreUpload(file);
+    if ("error" in stored) return NextResponse.json({ error: stored.error }, { status: stored.status });
+    const imageUrl = stored.url;
 
     await ensureSchema();
 
@@ -58,9 +40,17 @@ export async function POST(request: NextRequest) {
       [Number(entryId)]
     ) as { images_json: string } | undefined;
 
-    const images: string[] = row ? JSON.parse(row.images_json) : [];
+    let images: string[] = [];
+    if (row) {
+      try {
+        const parsed: unknown = JSON.parse(row.images_json);
+        images = Array.isArray(parsed) ? (parsed as string[]) : [];
+      } catch {
+        images = [];
+      }
+    }
 
-    revalidatePath("/");
+    revalidateHome();
     return NextResponse.json({ image_url: imageUrl, images });
   } catch {
     return NextResponse.json({ error: "upload failed" }, { status: 500 });
@@ -118,6 +108,6 @@ export async function DELETE(request: NextRequest) {
   );
 
   const filtered = images.filter((img) => img !== imageUrl);
-  revalidatePath("/");
+  revalidateHome();
   return NextResponse.json({ images: filtered });
 }

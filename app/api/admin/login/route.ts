@@ -56,6 +56,13 @@ export async function POST(request: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24,
     });
+    response.cookies.set(CSRF_COOKIE, newCsrfToken(), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: CSRF_MAX_AGE,
+    });
     return response;
   }
 
