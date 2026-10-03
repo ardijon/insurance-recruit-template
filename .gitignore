@@ -53,6 +53,9 @@ yarn-error.log*
 # freebuff debug database
 /freebuff/
 
+# test credential files — never commit
+login_body.json
+
 # uploaded images — regenerated per deployment
 /public/uploads/**
 !/public/uploads/visual-story/
