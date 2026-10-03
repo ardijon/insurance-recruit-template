@@ -1,0 +1,34 @@
+name: Notify buyers on push to main
+
+# خریدارها را از هر push به main مطلع می‌کند تا کلون‌هایشان فوری sync شوند.
+# فقط dispatch انجام می‌دهد — انتشار releases.json همچنان tag-only در release.yml است.
+# بدون DISPATCH_TOKEN یا customers.json، با پیام واضح skip می‌کند و سبز می‌ماند.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Dispatch template-update to buyer repos
+        env:
+          DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$DISPATCH_TOKEN" ] || [ ! -f customers.json ]; then
+            echo "dispatch انجام نشد — سکرت یا customers.json موجود نیست"
+            exit 0
+          fi
+          export GITHUB_TOKEN="$DISPATCH_TOKEN"
+          npx tsx scripts/release-dispatch.ts

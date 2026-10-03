@@ -51,6 +51,7 @@ export function SuccessWall({ entries }: { entries: SuccessWallEntry[] }) {
       {lightboxIdx && (
         <Lightbox
           images={lightboxIdx.images}
+          imageAlts={lightboxIdx.images.map((_, i) => `تصویر ${i + 1} دیوار موفقیت`)}
           initialIdx={lightboxIdx.idx}
           onClose={() => setLightboxIdx(null)}
         />
@@ -77,6 +78,10 @@ function SuccessCard({ entry, images, onImageClick }: { entry: SuccessWallEntry;
               <img
                 src={images[0]}
                 alt={entry.agentName}
+                width={64}
+                height={64}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 size-full object-cover"
               />
             </button>
@@ -115,8 +120,11 @@ function SuccessCard({ entry, images, onImageClick }: { entry: SuccessWallEntry;
               >
                 <img
                   src={img}
-                  alt=""
+                  alt={`تصویر ${idx + 1} ${entry.agentName}`}
+                  width={48}
+                  height={48}
                   loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 size-full object-cover"
                 />
               </button>

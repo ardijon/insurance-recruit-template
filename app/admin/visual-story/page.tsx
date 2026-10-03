@@ -99,8 +99,8 @@ export default function VisualStoryPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {images.map((img, idx) => (
             <div key={idx} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-bg-surface">
-              <button type="button" onClick={() => setLightboxIdx(idx)} className="size-full">
-                <img src={img} alt="" className="absolute inset-0 size-full object-cover" />
+              <button type="button" onClick={() => setLightboxIdx(idx)} className="size-full" aria-label={`مشاهده تصویر ${idx + 1} روایت موفقیت`}>
+                <img src={img} alt={`تصویر ${idx + 1} روایت موفقیت`} width={600} height={450} loading="lazy" decoding="async" sizes="(max-width: 768px) 50vw, 25vw" className="absolute inset-0 size-full object-cover" />
               </button>
               <button
                 type="button"
@@ -119,7 +119,7 @@ export default function VisualStoryPage() {
       )}
 
       {lightboxIdx !== null && (
-        <Lightbox images={images} initialIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+        <Lightbox images={images} imageAlts={images.map((_, i) => `تصویر ${i + 1} روایت موفقیت`)} initialIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />

@@ -285,7 +285,7 @@ export default function SuccessWallPage() {
       )}
 
       {lightbox && (
-        <Lightbox images={lightbox.images} initialIdx={lightbox.idx} onClose={() => setLightbox(null)} />
+        <Lightbox images={lightbox.images} imageAlts={lightbox.images.map((_, i) => `تصویر ${i + 1} دیوار موفقیت`)} initialIdx={lightbox.idx} onClose={() => setLightbox(null)} />
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />

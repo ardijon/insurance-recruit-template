@@ -3,7 +3,8 @@
 #
 # Usage:
 #   ./scripts/deploy-client.sh --token CF_TOKEN --domain example.ir \
-#       --admin-password 'S3cret!' [--worker NAME] [--db NAME] [--skip-dns]
+#       --admin-password 'S3cret!' [--worker NAME] [--db NAME] [--skip-dns] \
+#       [--changelog-url URL] [--deploy-hook-url URL]
 #
 # What it does:
 #   1. Validates inputs + verifies the token (whoami).
@@ -24,6 +25,8 @@ ADMIN_PASSWORD=""
 WORKER=""
 DB=""
 SKIP_DNS=0
+CHANGELOG_URL=""
+DEPLOY_HOOK_URL=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -32,6 +35,8 @@ while [[ $# -gt 0 ]]; do
     --admin-password) ADMIN_PASSWORD="$2"; shift 2 ;;
     --worker) WORKER="$2"; shift 2 ;;
     --db) DB="$2"; shift 2 ;;
+    --changelog-url) CHANGELOG_URL="$2"; shift 2 ;;
+    --deploy-hook-url) DEPLOY_HOOK_URL="$2"; shift 2 ;;
     --skip-dns) SKIP_DNS=1; shift ;;
     -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 1 ;;
@@ -69,6 +74,11 @@ fi
 echo "==> 3/6 writing per-client config wrangler.${WORKER}.toml…"
 SESSION_SECRET="$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")"
 APP_VERSION="$(node -p "require('./package.json').version")"
+UPDATE_VARS=""
+[[ -n "$CHANGELOG_URL" ]] && UPDATE_VARS="${UPDATE_VARS}
+UPDATE_CHANGELOG_URL = \"$CHANGELOG_URL\""
+[[ -n "$DEPLOY_HOOK_URL" ]] && UPDATE_VARS="${UPDATE_VARS}
+UPDATE_DEPLOY_HOOK_URL = \"$DEPLOY_HOOK_URL\""
 # releases.json must exist at build time — it is bundled into every install.
 (npm run changelog >/dev/null 2>&1 || true)
 cat > "wrangler.${WORKER}.toml" <<EOF
@@ -87,7 +97,7 @@ binding = "ASSETS"
 DEMO_MODE = "false"
 SESSION_SECRET = "$SESSION_SECRET"
 ADMIN_PASSWORD = "$ADMIN_PASSWORD"
-APP_VERSION = "$APP_VERSION"
+APP_VERSION = "$APP_VERSION"$UPDATE_VARS
 
 [[d1_databases]]
 binding = "DB"
@@ -140,5 +150,11 @@ echo "Admin:     https://$DOMAIN/admin  (password set by client)"
 echo "Worker:    $WORKER"
 echo "D1:        $DB ($DB_ID)"
 echo "Config:    wrangler.${WORKER}.toml  (keep for redeploys; never commit)"
+if [[ -z "$CHANGELOG_URL" || -z "$DEPLOY_HOOK_URL" ]]; then
+  echo "TODO: set missing update vars in wrangler.${WORKER}.toml [vars]:"
+  [[ -z "$CHANGELOG_URL" ]] && echo "  UPDATE_CHANGELOG_URL = \"https://<RELEASES_REPO raw>/releases.json (public releases feed)\""
+  [[ -z "$DEPLOY_HOOK_URL" ]] && echo "  UPDATE_DEPLOY_HOOK_URL = \"<hosting redeploy hook for $DOMAIN>\""
+  echo "  (or re-run with --changelog-url / --deploy-hook-url)"
+fi
 echo "=================================================="
 echo "Tell the client to delete the API token after delivery."

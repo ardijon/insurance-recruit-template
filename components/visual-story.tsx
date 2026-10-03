@@ -34,11 +34,17 @@ export function VisualStory({ images }: VisualStoryProps) {
                 type="button"
                 onClick={() => setLightboxIdx(idx)}
                 className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-bg-surface shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                aria-label={`مشاهده تصویر ${idx + 1} روایت موفقیت`}
               >
                 <img
                   src={img}
-                  alt=""
+                  alt={`تصویر ${idx + 1} روایت موفقیت`}
+                  width={600}
+                  height={450}
                   loading={idx < 4 ? "eager" : "lazy"}
+                  decoding="async"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  fetchPriority={idx < 2 ? "high" : "auto"}
                   className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -51,6 +57,7 @@ export function VisualStory({ images }: VisualStoryProps) {
       {lightboxIdx !== null && (
         <Lightbox
           images={images}
+          imageAlts={images.map((_, i) => `تصویر ${i + 1} روایت موفقیت`)}
           initialIdx={lightboxIdx}
           onClose={() => setLightboxIdx(null)}
         />
