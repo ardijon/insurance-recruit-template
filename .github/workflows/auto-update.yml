@@ -4,10 +4,9 @@ name: Auto update from upstream
 # را خودکار با نسخه جدید قالب همگام می‌کند؛ push حاصل باعث redeploy خودکار
 # در پلتفرم متصل (Cloudflare/Vercel/...) می‌شود.
 #
-# یک‌بار قبل از توزیع، مالک محصول:
-#   1) مقدار UPSTREAM_REPO را تنظیم کند (مسیر ریپوی خصوصی قالب).
-#   2) در هر ریپوی خریدار، سکرت UPSTREAM_PAT را بگذارد:
-#      PAT با دسترسی contents:read روی ریپوی قالب (فقط خواندن).
+# قالب حالا عمومی (public) است: کلون‌های خریدار بدون هیچ سکرتی sync می‌شوند.
+# فقط اگر قالب دوباره خصوصی شد، در هر ریپوی خریدار سکرت UPSTREAM_PAT بگذارید
+# (PAT با دسترسی contents:read روی ریپوی قالب) — در این حالت خودکار استفاده می‌شود.
 #
 # تریگرها: روزانه ۰۳:۰۰ UTC — یا فوری با دستور
 #   npm run release  (اسکریپت repository_dispatch برای همه خریداران)
@@ -42,13 +41,15 @@ jobs:
         env:
           UPSTREAM_PAT: ${{ secrets.UPSTREAM_PAT }}
         run: |
-          if [ -z "$UPSTREAM_PAT" ]; then
-            echo "::error::سکرت UPSTREAM_PAT تنظیم نشده — همگام‌سازی خودکار غیرفعال است"
-            exit 1
-          fi
           git config user.name "update-bot"
           git config user.email "bot@users.noreply.github.com"
-          git remote add upstream "https://x-access-token:${UPSTREAM_PAT}@github.com/${UPSTREAM_REPO}.git"
+          if [ -n "$UPSTREAM_PAT" ]; then
+            echo "UPSTREAM_PAT موجود است — sync خصوصی با توکن انجام می‌شود"
+            git remote add upstream "https://x-access-token:${UPSTREAM_PAT}@github.com/${UPSTREAM_REPO}.git"
+          else
+            echo "sync عمومی (بدون توکن) از ${UPSTREAM_REPO}"
+            git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          fi
           git fetch upstream main --tags --force
           if git merge --ff-only "upstream/main"; then
             git push origin HEAD

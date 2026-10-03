@@ -18,28 +18,76 @@ import { readFileSync } from "node:fs";
 
 const version = process.argv[2] ?? JSON.parse(readFileSync("package.json", "utf-8")).version;
 const token = process.env.GITHUB_TOKEN;
+const CLIENT_ORG = process.env.CLIENT_ORG ?? "tavana-clients";
+const CLIENT_TOPIC = "tavana-client";
 
 if (!token) {
-  console.error("GITHUB_TOKEN تنظیم نشده است");
-  process.exit(1);
+  console.log("GITHUB_TOKEN تنظیم نشده است — dispatch انجام نشد (skip)");
+  process.exit(0);
 }
 
-let customers: string[];
+// Legacy fallback: customers.json (may be missing or empty — still []-safe).
+let customers: string[] = [];
 try {
-  customers = JSON.parse(readFileSync("customers.json", "utf-8"));
+  const parsed: unknown = JSON.parse(readFileSync("customers.json", "utf-8"));
+  if (Array.isArray(parsed)) customers = parsed.filter((r): r is string => typeof r === "string");
 } catch {
-  console.error("customers.json پیدا نشد یا معتبر نیست — لیست ریپوهای خریداران را در آن بگذارید");
-  process.exit(1);
+  console.log("customers.json پیدا نشد یا معتبر نیست — فقط کشف موضوعی (topic) انجام می‌شود");
 }
 
-if (!Array.isArray(customers) || customers.length === 0) {
-  console.log("customers.json خالی است — کاری برای انجام دادن نیست");
+// Topic-based discovery: all repos in CLIENT_ORG tagged with CLIENT_TOPIC.
+async function discoverByTopic(): Promise<string[]> {
+  const found: string[] = [];
+  const headers = {
+    accept: "application/vnd.github+json",
+    authorization: `Bearer ${token}`,
+    "x-github-api-version": "2022-11-28",
+    "user-agent": "template-release-dispatch",
+  };
+  try {
+    for (let page = 1; page <= 10; page++) {
+      const res = await fetch(
+        `https://api.github.com/orgs/${CLIENT_ORG}/repos?per_page=100&page=${page}`,
+        { headers, signal: AbortSignal.timeout(15000) },
+      );
+      if (!res.ok) {
+        console.error(`کشف ریپوهای ${CLIENT_ORG} ناموفق بود — HTTP ${res.status} (ادامه با customers.json)`);
+        break;
+      }
+      const repos = (await res.json()) as { full_name: string }[];
+      if (repos.length === 0) break;
+      for (const repo of repos) {
+        try {
+          const tRes = await fetch(`https://api.github.com/repos/${repo.full_name}/topics`, {
+            headers,
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!tRes.ok) continue;
+          const topics = (await tRes.json()) as { names?: string[] };
+          if (topics.names?.includes(CLIENT_TOPIC)) found.push(repo.full_name);
+        } catch {
+          continue;
+        }
+      }
+      if (repos.length < 100) break;
+    }
+  } catch (err) {
+    console.error(`کشف موضوعی ناموفق بود — ادامه با customers.json (${err instanceof Error ? err.message : err})`);
+  }
+  return found;
+}
+
+const discovered = await discoverByTopic();
+const repos = [...new Set([...customers, ...discovered])];
+
+if (repos.length === 0) {
+  console.log("هیچ ریپوی خریداری پیدا نشد (customers.json خالی و تاپیک tavana-client یافت نشد) — کاری برای انجام دادن نیست");
   process.exit(0);
 }
 
 let ok = 0;
 let failed = 0;
-for (const repo of customers) {
+for (const repo of repos) {
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
       method: "POST",
