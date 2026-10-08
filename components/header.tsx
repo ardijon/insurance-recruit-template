@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_ITEMS = [
   { href: "#manager-profile", label: "پروفایل مدیر" },
-  { href: "#success-wall", label: "موفقیت‌ها" },
+  { href: "#success-wall", label: "دیوار موفقیت" },
+  { href: "#visual-story", label: "روایت تصویری" },
   { href: "#growth-path", label: "مسیر رشد" },
   { href: "#faq", label: "پرسش‌های متداول" },
   { href: "#location", label: "آدرس روی نقشه" },
@@ -14,32 +15,21 @@ const NAV_ITEMS = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [applyHref, setApplyHref] = useState("/apply");
+
+  // Preserve an incoming ?ref= code so the referral attribution survives
+  // the hop from the landing page to the application form.
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync of the URL into the CTA link on mount
+    if (ref) setApplyHref(`/apply?ref=${encodeURIComponent(ref)}`);
+  }, []);
 
   return (
     <header className="glass sticky top-0 z-50 border-b border-border">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link
-          href="/apply"
-          className="rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast no-underline transition-opacity hover:opacity-90"
-        >
-          درخواست نمایندگی
-        </Link>
-
-        <ul className="hidden items-center gap-6 md:flex">
-          {NAV_ITEMS.map((item) => (
-            <li key={item.href}>
-              <a
-                href={item.href}
-                className="text-sm text-text-secondary no-underline transition-colors hover:text-text-primary"
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-
+      <nav className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        {/* RTL start (right side): hamburger on mobile, CTA on desktop */}
         <div className="flex items-center gap-2">
-          {/* Mobile menu button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -60,6 +50,36 @@ export function Header() {
               </svg>
             )}
           </button>
+          <Link
+            href={applyHref}
+            className="hidden rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast no-underline transition-opacity hover:opacity-90 md:inline-flex"
+          >
+            درخواست نمایندگی
+          </Link>
+        </div>
+
+        <ul className="hidden items-center gap-6 md:flex">
+          {NAV_ITEMS.map((item) => (
+            <li key={item.href}>
+              <a
+                href={item.href}
+                className="text-sm text-text-secondary no-underline transition-colors hover:text-text-primary"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        {/* Mobile-only centered CTA */}
+        <Link
+          href={applyHref}
+          className="absolute left-1/2 -translate-x-1/2 rounded-lg bg-brand-cta px-4 py-2 text-sm font-medium text-cta-contrast no-underline transition-opacity hover:opacity-90 md:hidden"
+        >
+          درخواست نمایندگی
+        </Link>
+
+        <div className="flex items-center gap-2">
           <Link
             href="/admin/login"
             className="flex size-9 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-surface transition-colors"

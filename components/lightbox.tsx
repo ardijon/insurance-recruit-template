@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export interface LightboxProps {
   images: string[];
@@ -169,7 +170,12 @@ export function Lightbox({ images, initialIdx, onClose, imageAlts }: LightboxPro
 
   const currentAlt = imageAlts?.[currentIdx] ?? "";
 
-  return (
+  // Render via portal on document.body: any transformed ancestor (e.g. the
+  // AnimateOnShow reveal wrapper) would otherwise turn position:fixed into
+  // positioning relative to that ancestor instead of the viewport.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       ref={containerRef}
       role="dialog"
@@ -177,7 +183,7 @@ export function Lightbox({ images, initialIdx, onClose, imageAlts }: LightboxPro
       aria-label="نمایش تصویر روایت موفقیت"
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
       style={{
-        backgroundColor: `rgba(var(--color-bg-base-rgb, 250 248 244), ${bgOpacity})`,
+        backgroundColor: `rgba(10, 15, 25, ${0.88 * bgOpacity})`,
         backdropFilter: `blur(${12 * bgOpacity}px)`,
         transition: "background-color 0.3s, backdrop-filter 0.3s",
       }}
@@ -262,18 +268,20 @@ export function Lightbox({ images, initialIdx, onClose, imageAlts }: LightboxPro
         )}
       </div>
 
-      {/* Image — double-click / double-tap toggles zoom; wrapper scrolls when zoomed */}
-      <div className={`flex-1 flex items-center justify-center px-6 select-none ${zoomed ? "overflow-auto" : "overflow-hidden"}`}>
+      {/* Image — single click zooms out, double-click zooms in; m-auto keeps it
+          truly centered and scrollable when zoomed (flex centering alone clips
+          the top of overflowing content) */}
+      <div className={`flex min-h-0 w-full flex-1 select-none ${zoomed ? "overflow-auto p-6" : "items-center justify-center overflow-hidden px-6"}`}>
         <img
           key={currentIdx}
           src={images[currentIdx]}
           alt={currentAlt}
-          className={`max-h-[82vh] max-w-full rounded-2xl object-contain shadow-2xl will-change-transform ${zoomed ? "cursor-zoom-out scale-[2]" : "cursor-zoom-in"}`}
+          className={`max-h-[82vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl will-change-transform ${zoomed ? "m-auto cursor-zoom-out scale-[2]" : "cursor-zoom-in"}`}
           style={zoomed
-            ? { transformOrigin: zoomOrigin, transition: "transform 0.2s ease-out" }
+            ? { transformOrigin: zoomOrigin, transition: "transform 0.2s ease-out, scale 0.2s ease-out" }
             : slideStyle}
-          onClick={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => { e.stopPropagation(); toggleZoom(zoomOriginFromEvent(e.clientX, e.clientY, e.target)); }}
+          onClick={(e) => { e.stopPropagation(); if (zoomed) toggleZoom(); }}
+          onDoubleClick={(e) => { e.stopPropagation(); if (!zoomed) toggleZoom(zoomOriginFromEvent(e.clientX, e.clientY, e.target)); }}
           draggable={false}
         />
       </div>
@@ -286,6 +294,7 @@ export function Lightbox({ images, initialIdx, onClose, imageAlts }: LightboxPro
           </span>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

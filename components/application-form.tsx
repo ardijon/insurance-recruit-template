@@ -6,7 +6,7 @@ import type { Step1Data } from "@/lib/validation";
 import { getFitQuestions, MAX_FIT_SCORE } from "@/lib/fit-assessment";
 import type { FitAnswers } from "@/lib/fit-assessment";
 import { useReferral } from "@/hooks/use-referral";
-import { SALES_QUESTIONS } from "@/lib/sales-background";
+import { SALES_QUESTIONS, NETWORK_SIZE_OPTIONS, AVAILABILITY_OPTIONS } from "@/lib/sales-background";
 
 const STEPS = [
   { label: "اطلاعات پایه", number: 1 },
@@ -43,22 +43,12 @@ const STEP2_QUESTIONS: { id: keyof Step2Structured; label: string; options: { va
   {
     id: "network_size",
     label: "اندازه شبکه ارتباطی شما چقدر است؟",
-    options: [
-      { value: 1, label: "کمتر از ۵۰ نفر" },
-      { value: 2, label: "۵۰ تا ۲۰۰ نفر" },
-      { value: 3, label: "۲۰۰ تا ۵۰۰ نفر" },
-      { value: 4, label: "بیش از ۵۰۰ نفر" },
-    ],
+    options: NETWORK_SIZE_OPTIONS,
   },
   {
     id: "availability",
     label: "میزان زمان قابل اختصاص به فعالیت؟",
-    options: [
-      { value: 1, label: "پارهوقت کم" },
-      { value: 2, label: "پارهوقت" },
-      { value: 3, label: "تماموقت" },
-      { value: 4, label: "تماموقت + انعطاف کامل" },
-    ],
+    options: AVAILABILITY_OPTIONS,
   },
 ];
 

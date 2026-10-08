@@ -11,6 +11,7 @@ export interface Applicant {
   city: string | null;
   score: number | null;
   referral_code: string | null;
+  referral_agent?: string | null;
   sales_background: string | null;
   network_size: string | null;
   availability: string | null;

@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { executeInsert, ensureSchema } from "@/lib/db";
+import { selectAll, executeInsert, executeUpdate, ensureSchema } from "@/lib/db";
 import { checkPublicRateLimit, getRateLimitKey } from "@/lib/rate-limit";
 import { isAdminRequest } from "@/lib/admin-guard";
+import { isDemoMode } from "@/lib/demo";
 
 const CODE_REGEX = /^[a-zA-Z0-9_-]{3,32}$/;
+
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (isDemoMode()) {
+    return NextResponse.json([]);
+  }
+  await ensureSchema();
+  const rows = await selectAll(
+    `SELECT rl.id, rl.agent_name, rl.code, rl.created_at, COUNT(a.id) AS uses
+     FROM referral_links rl LEFT JOIN applicants a ON a.referral_code = rl.code
+     GROUP BY rl.id ORDER BY rl.id DESC`
+  );
+  return NextResponse.json(rows);
+}
 
 export async function POST(request: NextRequest) {
   // This endpoint mutates the database, so it must be authenticated. The
@@ -68,4 +85,21 @@ export async function POST(request: NextRequest) {
     { message: "لینک ارجاع ثبت شد", code },
     { status: 201 },
   );
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 422 });
+  }
+  await ensureSchema();
+  const result = await executeUpdate("DELETE FROM referral_links WHERE id = ?", [Number(id)]);
+  if (result.rowsAffected === 0) {
+    return NextResponse.json({ error: "item not found" }, { status: 404 });
+  }
+  return NextResponse.json({ success: true });
 }

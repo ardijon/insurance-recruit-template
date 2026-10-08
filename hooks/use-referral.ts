@@ -21,8 +21,12 @@ export function useReferral() {
     fetch(`/api/referrals/${encodeURIComponent(ref)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        setReferralCode(ref);
-        setReferralAgentName(data?.agentName ?? null);
+        // Only keep codes that actually exist — otherwise the applicant
+        // would be stored with a junk code nobody can trace back.
+        if (data?.agentName) {
+          setReferralCode(ref);
+          setReferralAgentName(data.agentName);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));

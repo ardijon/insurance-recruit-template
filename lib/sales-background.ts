@@ -42,6 +42,41 @@ export const SALES_QUESTIONS: SalesQuestion[] = [
   },
 ];
 
+export const NETWORK_SIZE_OPTIONS: SalesOption[] = [
+  { value: 1, label: "کمتر از ۵۰ نفر" },
+  { value: 2, label: "۵۰ تا ۲۰۰ نفر" },
+  { value: 3, label: "۲۰۰ تا ۵۰۰ نفر" },
+  { value: 4, label: "بیش از ۵۰۰ نفر" },
+];
+
+export const AVAILABILITY_OPTIONS: SalesOption[] = [
+  { value: 1, label: "پارهوقت کم" },
+  { value: 2, label: "پارهوقت" },
+  { value: 3, label: "تماموقت" },
+  { value: 4, label: "تماموقت + انعطاف کامل" },
+];
+
+// Maps a stored answer (numeric 1..4, as number or string) back to its
+// Persian label. Unknown/legacy free-text values pass through unchanged,
+// so rows written before the structured form keep displaying correctly.
+function formatOptionValue(raw: string | number | null | undefined, options: SalesOption[]): string {
+  if (raw === null || raw === undefined || raw === "") return "—";
+  const num = Number(String(raw).trim());
+  if (Number.isInteger(num)) {
+    const opt = options.find((o) => o.value === num);
+    if (opt) return opt.label;
+  }
+  return String(raw);
+}
+
+export function formatNetworkSize(raw: string | number | null | undefined): string {
+  return formatOptionValue(raw, NETWORK_SIZE_OPTIONS);
+}
+
+export function formatAvailability(raw: string | number | null | undefined): string {
+  return formatOptionValue(raw, AVAILABILITY_OPTIONS);
+}
+
 type SalesBackground = Partial<Record<"sales_experience" | "sales_result" | "leadership", number | null>>;
 
 // Converts the JSON-encoded sales_background (numbers) into human-readable

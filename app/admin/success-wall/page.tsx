@@ -71,6 +71,13 @@ export default function SuccessWallPage() {
     } catch { addToast("خطا در حذف", "error"); }
   }
 
+  async function handleCopyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      addToast("متن کپی شد");
+    } catch { addToast("کپی نشد", "error"); }
+  }
+
   async function handleEdit(item: Entry) {
     if (!editName.trim() || !editQuote.trim()) return;
     try {
@@ -202,11 +209,9 @@ export default function SuccessWallPage() {
             return (
               <div
                 key={e.id}
-                draggable
-                onDragStart={() => handleDragStart(idx)}
                 onDragOver={(ev) => handleDragOver(ev, idx)}
                 onDragEnd={handleDragEnd}
-                className={`rounded-xl border bg-bg-surface p-4 transition-shadow hover:shadow-sm ${dragIndex === idx ? "opacity-50" : ""} ${dragIndex !== null && dragIndex !== idx ? "cursor-grab" : ""}`}
+                className={`rounded-xl border bg-bg-surface p-4 transition-shadow hover:shadow-sm select-text ${dragIndex === idx ? "opacity-50" : ""}`}
               >
                 {editingId === e.id ? (
                   <div className="flex flex-col gap-3">
@@ -224,14 +229,30 @@ export default function SuccessWallPage() {
                 ) : (
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
+                      <span
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        title="جابه‌جایی"
+                        className="mt-1 flex shrink-0 cursor-grab touch-none items-center rounded-md px-1 py-2 text-text-secondary/60 transition-colors hover:bg-bg-base hover:text-text-primary active:cursor-grabbing"
+                      >
+                        <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <circle cx="9" cy="6" r="1.5" />
+                          <circle cx="15" cy="6" r="1.5" />
+                          <circle cx="9" cy="12" r="1.5" />
+                          <circle cx="15" cy="12" r="1.5" />
+                          <circle cx="9" cy="18" r="1.5" />
+                          <circle cx="15" cy="18" r="1.5" />
+                        </svg>
+                      </span>
                       <div className="flex-1 min-w-0">
                         <button type="button" onClick={() => startEdit(e)} className="text-right font-bold text-text-primary hover:text-brand-cta transition-colors">{e.agent_name}</button>
-                        <p className="mt-1 text-sm text-text-secondary line-clamp-2">{e.quote}</p>
+                        <p className="mt-1 text-sm text-text-secondary select-text">{e.quote}</p>
                         <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${e.permission_granted ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
                           {e.permission_granted ? "مجاز برای انتشار" : "عدم مجوز"}
                         </span>
                       </div>
                       <div className="flex gap-2 shrink-0">
+                        <button type="button" onClick={() => handleCopyText(`${e.agent_name}\n${e.quote}`)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-base">کپی</button>
                         <button type="button" onClick={() => startEdit(e)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-base">ویرایش</button>
                         <button type="button" onClick={() => handleDelete(e.id)} className="rounded-lg border border-danger/30 px-3 py-1.5 text-xs text-danger transition-colors hover:bg-danger hover:text-cta-contrast">حذف</button>
                       </div>

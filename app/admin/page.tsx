@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatJalali, formatJalaliShort, toPersianDigits, todayJalaliDate, dateFromIso } from "@/lib/jalali";
-import { formatSalesBackground } from "@/lib/sales-background";
+import { formatSalesBackground, formatNetworkSize, formatAvailability } from "@/lib/sales-background";
 import { JalaliCalendar } from "@/components/jalali-calendar";
 import { ToastContainer } from "@/components/toast";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,7 @@ interface Applicant {
   city: string | null;
   score: number | null;
   referral_code: string | null;
+  referral_agent?: string | null;
   sales_background: string | null;
   network_size: string | null;
   availability: string | null;
@@ -118,8 +119,10 @@ export default function AdminDashboard() {
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setApplicants(data.data);
-        setTotalCount(data.total);
+        // Guard: if the API ever returns an error payload instead of the
+        // list shape, keep an empty list rather than crashing on .filter.
+        setApplicants(Array.isArray(data.data) ? data.data : []);
+        setTotalCount(typeof data.total === "number" ? data.total : 0);
       })
       .catch(() => {
         if (cancelled) return;
@@ -512,7 +515,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-2.5">
                 <Info label="شهر" value={detailFor.city ?? "—"} />
                 <Info label="امتیاز" value={detailFor.score !== null ? toPersianDigits(detailFor.score) : "ثبت نشده"} />
-                <Info label="کد معرف" value={detailFor.referral_code ?? "—"} />
+                <Info label="کد معرف" value={detailFor.referral_agent ? `${detailFor.referral_agent} (${detailFor.referral_code})` : (detailFor.referral_code ?? "—")} />
                 <Info label="تاریخ ثبت" value={formatJalaliShort(detailFor.created_at)} />
                 <Info label="وضعیت" value={STATUS_CONFIG[detailFor.status]?.label ?? "جدید"} />
                 {detailFor.appointment_date && <Info label="قرار ملاقات" value={`${formatJalali(detailFor.appointment_date)} — ${detailFor.appointment_time ?? "—"}`} />}
@@ -520,8 +523,8 @@ export default function AdminDashboard() {
 
               <div className="mt-4 border-t border-border pt-4 flex flex-col gap-3">
                 <DetailBlock label="سابقه فروش" value={formatSalesBackground(detailFor.sales_background)} />
-                <DetailBlock label="شبکه ارتباطی" value={detailFor.network_size} />
-                <DetailBlock label="زمان در دسترس" value={detailFor.availability} />
+                <DetailBlock label="شبکه ارتباطی" value={formatNetworkSize(detailFor.network_size)} />
+                <DetailBlock label="زمان در دسترس" value={formatAvailability(detailFor.availability)} />
                 <DetailBlock label="انگیزه" value={detailFor.motivation} />
               </div>
             </div>

@@ -291,11 +291,9 @@ export default function GrowthPathPage() {
           {stages.map((s, idx) => (
             <div
               key={s.id}
-              draggable
-              onDragStart={() => handleDragStart(idx)}
               onDragOver={(e) => handleDragOver(e, idx)}
               onDragEnd={handleDragEnd}
-              className={`rounded-xl border bg-bg-surface p-4 transition-shadow hover:shadow-sm ${dragIndex === idx ? "opacity-50" : ""} ${dragIndex !== null && dragIndex !== idx ? "cursor-grab" : ""}`}
+              className={`rounded-xl border bg-bg-surface p-4 transition-shadow hover:shadow-sm select-text ${dragIndex === idx ? "opacity-50" : ""}`}
             >
               {editingId === s.id ? (
                 <div className="flex flex-col gap-3">
@@ -313,6 +311,21 @@ export default function GrowthPathPage() {
               ) : (
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <span
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      title="جابه‌جایی"
+                      className="mt-1 flex shrink-0 cursor-grab touch-none items-center rounded-md px-1 py-2 text-text-secondary/60 transition-colors hover:bg-bg-base hover:text-text-primary active:cursor-grabbing"
+                    >
+                      <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                        <circle cx="9" cy="6" r="1.5" />
+                        <circle cx="15" cy="6" r="1.5" />
+                        <circle cx="9" cy="12" r="1.5" />
+                        <circle cx="15" cy="12" r="1.5" />
+                        <circle cx="9" cy="18" r="1.5" />
+                        <circle cx="15" cy="18" r="1.5" />
+                      </svg>
+                    </span>
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-cta/10 text-sm font-bold text-brand-cta">{idx + 1}</span>
                     <div>
                       <button type="button" onClick={() => startEdit(s)} className="text-right font-bold text-text-primary hover:text-brand-cta transition-colors">{s.title}</button>

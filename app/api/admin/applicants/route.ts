@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
   if (city) { conditions.push("city = ?"); params.push(city); }
   if (hasAppointment === "true") { conditions.push("appointment_date IS NOT NULL"); }
   else if (hasAppointment === "false") { conditions.push("appointment_date IS NULL"); }
-  if (dateFrom) { conditions.push("date(created_at) >= date(?)"); params.push(dateFrom); }
-  if (dateTo) { conditions.push("date(created_at) <= date(?)"); params.push(dateTo); }
+  if (dateFrom) { conditions.push("date(applicants.created_at) >= date(?)"); params.push(dateFrom); }
+  if (dateTo) { conditions.push("date(applicants.created_at) <= date(?)"); params.push(dateTo); }
   if (statusParam) {
     const statuses = statusParam.split(",").filter((s) => VALID_STATUSES.includes(s as (typeof VALID_STATUSES)[number]));
     if (statuses.length === 1) { conditions.push("status = ?"); params.push(statuses[0]); }
@@ -91,11 +91,11 @@ export async function GET(request: NextRequest) {
   // Phone numbers and motivations are admin-only PII — never SELECT *.
   // Deterministic tiebreaker on id for stable pagination.
   const data = await selectAll(
-    `SELECT id, full_name, phone, city, sales_background, network_size,
-      availability, motivation, score, referral_code,
-      appointment_date, appointment_jalali, appointment_time, status, created_at
-      FROM applicants ${where}
-     ORDER BY ${sortBy} ${sortOrder}, id ASC
+    `SELECT applicants.id, full_name, phone, city, sales_background, network_size,
+      availability, motivation, score, referral_code, rl.agent_name AS referral_agent,
+      appointment_date, appointment_jalali, appointment_time, status, applicants.created_at
+      FROM applicants LEFT JOIN referral_links rl ON rl.code = applicants.referral_code ${where}
+     ORDER BY applicants.${sortBy} ${sortOrder}, applicants.id ASC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
