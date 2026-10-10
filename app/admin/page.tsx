@@ -375,7 +375,7 @@ export default function AdminDashboard() {
               return (
                 <div
                   key={applicant.id}
-                  className="rounded-xl border border-border bg-bg-surface overflow-hidden transition-shadow hover:shadow-sm"
+                  className="rounded-xl border border-border bg-bg-surface transition-shadow hover:shadow-sm"
                 >
                 {/* Main row */}
                 <div className="flex items-start gap-3 p-3">
@@ -432,7 +432,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Action row */}
-                <div className="flex border-t border-border/50 bg-bg-base/50">
+                <div className="flex border-t border-border/50 bg-bg-base/50 rounded-b-xl overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setDetailFor(applicant)}
